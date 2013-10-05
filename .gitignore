@@ -11,3 +11,7 @@
 *.lai
 *.la
 *.a
+
+# ECLIPSE CDT project files
+.project
+.cproject
