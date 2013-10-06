@@ -15,3 +15,4 @@
 # ECLIPSE CDT project files
 .project
 .cproject
+.settings
