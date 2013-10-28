@@ -7,8 +7,6 @@
 
 #include "web_interface.h"
 
-#include <iostream>
-
 #include <fcgio.h>
 #include <fcgiapp.h>
 
@@ -16,17 +14,17 @@
 
 using namespace std;
 
-WebInterface::WebInterface(ApplicationInterface *interface) {
-	application_interface_ = (ApplicationInterface *) interface;
+WebInterface::WebInterface(std::shared_ptr<ApplicationInterface> application_interface) {
+	application_interface_ = application_interface;
 }
 
 WebInterface::~WebInterface() {
-
+	application_interface_.reset();
 }
 
 void WebInterface::process() {
 	// Backup the stdio streambufs
-	streambuf * cin_streambuf = cin.rdbuf();
+	streambuf * cin_streambuf  = cin.rdbuf();
 	streambuf * cout_streambuf = cout.rdbuf();
 	streambuf * cerr_streambuf = cerr.rdbuf();
 

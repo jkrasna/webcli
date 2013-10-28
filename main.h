@@ -1,11 +1,6 @@
-/*
- * main.h
- *
- *  Created on: Oct 5, 2013
- *      Author: jkrasna
- */
+#ifndef WEBCLI_MAIN_H_
+#define WEBCLI_MAIN_H_
 
-#ifndef MAIN_H_
-#define MAIN_H_
+#include "precompiled.h"
 
-#endif /* MAIN_H_ */
+#endif /* WEBCLI_MAIN_H_ */

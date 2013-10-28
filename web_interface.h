@@ -1,18 +1,18 @@
-#ifndef WEB_INTERFACE_H_
-#define WEB_INTERFACE_H_
+#ifndef WEBCLI_WEB_INTERFACE_H_
+#define WEBCLI_WEB_INTERFACE_H_
 
-#include <iostream>
+#include "precompiled.h"
 
 class ApplicationInterface;
 
 class WebInterface {
 public:
-	WebInterface(ApplicationInterface *);
+	WebInterface(std::shared_ptr<ApplicationInterface> application_interface);
 	virtual ~WebInterface(void);
 
 	void process(void);
 private:
-	ApplicationInterface * application_interface_;
+	std::shared_ptr<ApplicationInterface> application_interface_;
 };
 
-#endif /* WEB_INTERFACE_H_ */
+#endif /* WEBCLI_WEB_INTERFACE_H_ */
