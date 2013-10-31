@@ -3,14 +3,12 @@
 
 #include "precompiled.h"
 #include "application_data.h"
+#include "application_console_line.h"
+
+#define QUEUE_MESSAGE_COUNT_MAX 	1024;
 
 enum APPLICATION_STATUS {
 	applicationSuccess, applicationError,
-};
-
-struct APPLICATION_MESSAGE {
-	int index;
-	std::string data;
 };
 
 class ApplicationInterface {
@@ -19,19 +17,20 @@ public:
 	virtual ~ApplicationInterface();
 
 	void addApplicationInputMessage(std::string);
-	std::deque<APPLICATION_MESSAGE> *getApplicationOutputMessage(
+	void addApplicationInputMessage(char *);
+	std::deque<ApplicationConsoleLinePtr> *getApplicationOutputMessage(
 			int last_index);
-
-	int start();
 
 private:
 	void initialize(std::shared_ptr<ApplicationData> application_data);
 	void worker();
 
+	int start_subprocess();
+
 	std::thread *worker_thread_;
 
-	std::deque<APPLICATION_MESSAGE> *application_input_messages_;
-	std::deque<APPLICATION_MESSAGE> *application_output_messages_;
+	std::deque<ApplicationConsoleLinePtr> *application_input_messages_;
+	std::deque<ApplicationConsoleLinePtr> *application_output_messages_;
 
 	std::shared_ptr<ApplicationData> application_data_;
 };

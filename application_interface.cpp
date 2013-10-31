@@ -10,9 +10,10 @@ ApplicationInterface::ApplicationInterface(
 void ApplicationInterface::initialize(
 		std::shared_ptr<ApplicationData> application_data) {
 	application_data_ = application_data;
+	application_input_messages_ = new std::deque<ApplicationConsoleLinePtr>();
+	application_output_messages_ = new std::deque<ApplicationConsoleLinePtr>();
+
 	worker_thread_ = new std::thread(&ApplicationInterface::worker, this);
-	application_input_messages_ = new std::deque<APPLICATION_MESSAGE>();
-	application_output_messages_ = new std::deque<APPLICATION_MESSAGE>();
 }
 
 ApplicationInterface::~ApplicationInterface() {
@@ -27,17 +28,20 @@ ApplicationInterface::~ApplicationInterface() {
 	application_data_.reset();
 }
 
-int ApplicationInterface::start() {
+int ApplicationInterface::start_subprocess() {
 	// TODO: Initialize and start application (check application path, fork, set session, create process group, execvp,...)
 	pid_t pid = 0;
 
 	pid = fork();
 
 	if (pid < 0) {
-		//TODO: Fork failed
+		//TODO: Fork failed - log message
+		return applicationError;
 	} else if (pid == 0) {
 		//TODO: Child logic
-		//execvp("echo", );
+		if(application_data_->isApplicationPathSet()) {
+			execve(application_data_->application_, application_data_->getArgumentList(), NULL);
+		}
 	} else {
 		//TODO: Parent logic
 	}
@@ -48,7 +52,7 @@ int ApplicationInterface::start() {
 void ApplicationInterface::worker() {
 	bool running = true;
 
-	if (!this->start()) {
+	if (!this->start_subprocess()) {
 		//TODO: throw initialization error
 	}
 

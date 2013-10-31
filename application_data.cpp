@@ -4,6 +4,7 @@ ApplicationData::ApplicationData(std::string run_path, std::string application) 
 	run_path_ = new std::string(run_path);
 	application_ = new std::string(application);
 	application_path_ = NULL;
+	application_path_set_ = false;
 	arguments_ = new std::vector<std::string>();
 	mutex_ = new std::mutex();
 }
@@ -12,6 +13,7 @@ ApplicationData::ApplicationData(std::string run_path, std::string application, 
 	run_path_ = new std::string(run_path);
 	application_ = new std::string(application);
 	application_path_ = new std::string(application_path);
+	application_path_set_ = true;
 	arguments_ = new std::vector<std::string>();
 	mutex_ = new std::mutex();
 }
@@ -46,11 +48,10 @@ std::string ApplicationData::getApplicationPath() {
 	return *application_path_;
 }
 
-std::string ApplicationData::getSpaceSeparatedArgumentList() {
+char **ApplicationData::getArgumentList() {
 	std::lock_guard<std::mutex> _(*mutex_);
-	std::string list("");
 
-	//TODO: Create space separated argument list
+	//TODO: Create pointer argument list
 
-	return list;
+	return NULL;
 }

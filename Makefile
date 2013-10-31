@@ -10,12 +10,11 @@ MAIN=webcli
 
 all: $(MAIN)
 
-precompiled.cpp: precompiled.h
-%.cpp: precompiled.h
-application_data.cpp: application_data.h
-application_interface.cpp: application_interface.h application_data.h
-web_interface.cpp: web_interface.h application_interface.h
-main.cpp: main.h web_interface.h application_interface.h
+precompiled.cpp: 				precompiled.h
+application_data.cpp: 			precompiled.h application_data.h 
+application_interface.cpp: 		precompiled.h application_interface.h application_data.h
+web_interface.cpp: 				precompiled.h web_interface.h application_interface.h
+main.cpp: 						precompiled.h main.h web_interface.h application_interface.h
 
 
 %.o: %.cpp
