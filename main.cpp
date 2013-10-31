@@ -11,7 +11,7 @@ int main(int argc, char **argv)
 	application_data->addNewArgument("-al");
 
 	std::shared_ptr<ApplicationInterface> application_interface(new ApplicationInterface(application_data));
-	std::shared_ptr<WebInterface> web_interface(new WebInterface(application_interface.get()));
+	std::shared_ptr<WebInterface> web_interface(new WebInterface(application_interface));
 
 	web_interface.get()->process();
 
