@@ -9,10 +9,11 @@ public:
 	ApplicationData(std::string run_path, std::string application, std::string application_path);
 	virtual ~ApplicationData();
 
+	void addNewArgument(char *argument);
 	void addNewArgument(std::string argument);
 
 	std::string getRunPath();
-	std::string getApplication();
+	std::string getApplicationName();
 	std::string getApplicationPath();
 	bool isApplicationPathSet();
 	char **getArgumentList();
@@ -21,7 +22,7 @@ private:
 	void initialize(std::string run_path, std::string application, std::string application_path);
 
 	std::string *run_path_;
-	std::string *application_;
+	std::string *application_name_;
 	std::string *application_path_;
 	bool application_path_set_;
 

@@ -40,7 +40,7 @@ int ApplicationInterface::start_subprocess() {
 	} else if (pid == 0) {
 		//TODO: Child logic
 		if(application_data_->isApplicationPathSet()) {
-			execve(application_data_->application_, application_data_->getArgumentList(), NULL);
+			execve(application_data_->getApplicationName().c_str(), application_data_->getArgumentList(), NULL);
 		}
 	} else {
 		//TODO: Parent logic

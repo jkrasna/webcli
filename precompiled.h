@@ -9,6 +9,7 @@
 #include <mutex>
 #include <memory>
 #include <vector>
+#include <cstdlib>
 
 //#include <boost/smart_ptr.hpp>
 
