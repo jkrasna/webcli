@@ -4,7 +4,7 @@ CCFLAGS=-Wall -g -std=c++11
 SOURCES=$(wildcard *.cpp)
 OBJECTS=$(SOURCES:.cpp=.o)
 
-LIBS=-lfcgi++ -lfcgi -lboost_thread -lboost_system
+LIBS=-lfcgi++ -lfcgi -lboost_thread -lboost_system -lutil
 
 MAIN=webcli
 

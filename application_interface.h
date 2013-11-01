@@ -35,6 +35,10 @@ private:
 	std::shared_ptr<ApplicationData> application_data_;
 
 	pid_t child_pid_;
+	pid_t child_sid_;
+	int fd_terminal_master_;
+	int fd_terminal_slave_;
+	char *slave_name_;
 };
 
 #endif /* WEBCLI_APPLICATION_INTERFACE_H_ */
