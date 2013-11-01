@@ -3,7 +3,7 @@
 
 #include "precompiled.h"
 #include "application_data.h"
-#include "application_console_line.h"
+#include "console_line.h"
 
 #define QUEUE_MESSAGE_COUNT_MAX 	1024;
 
@@ -16,9 +16,9 @@ public:
 	ApplicationInterface(std::shared_ptr<ApplicationData> application_data);
 	virtual ~ApplicationInterface();
 
-	void addApplicationInputMessage(std::string);
-	void addApplicationInputMessage(char *);
-	std::deque<ApplicationConsoleLinePtr> *getApplicationOutputMessage(
+	void addInputMessage(std::string);
+	void addInputMessage(char *);
+	std::deque<consoleLinePtr> *getOutputMessage(
 			int last_index);
 
 private:
@@ -29,8 +29,9 @@ private:
 
 	std::thread *worker_thread_;
 
-	std::deque<ApplicationConsoleLinePtr> *application_input_messages_;
-	std::deque<ApplicationConsoleLinePtr> *application_output_messages_;
+	std::deque<consoleLinePtr> *input_messages_;
+	std::deque<consoleLinePtr> *output_messages_;
+	std::mutex *mutex_;
 
 	std::shared_ptr<ApplicationData> application_data_;
 

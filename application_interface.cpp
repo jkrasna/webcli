@@ -14,8 +14,10 @@ ApplicationInterface::ApplicationInterface(
 void ApplicationInterface::initialize(
 		std::shared_ptr<ApplicationData> application_data) {
 	application_data_ = application_data;
-	application_input_messages_ = new std::deque<ApplicationConsoleLinePtr>();
-	application_output_messages_ = new std::deque<ApplicationConsoleLinePtr>();
+	input_messages_ = new std::deque<consoleLinePtr>();
+	output_messages_ = new std::deque<consoleLinePtr>();
+
+	mutex_ = new std::mutex();
 
 	worker_thread_ = new std::thread(&ApplicationInterface::worker, this);
 
@@ -32,10 +34,26 @@ ApplicationInterface::~ApplicationInterface() {
 		delete worker_thread_;
 	}
 
-	delete application_input_messages_;
-	delete application_output_messages_;
+	delete mutex_;
+	delete input_messages_;
+	delete output_messages_;
 
 	application_data_.reset();
+}
+
+void ApplicationInterface::addInputMessage(std::string) {
+	std::lock_guard<std::mutex> _(*mutex_);
+}
+
+void ApplicationInterface::addInputMessage(char *) {
+	std::lock_guard<std::mutex> _(*mutex_);
+
+}
+
+std::deque<consoleLinePtr> *ApplicationInterface::getOutputMessage(int last_index) {
+	std::lock_guard<std::mutex> _(*mutex_);
+
+	return NULL;
 }
 
 //! The function that starts the application as a subprocess
@@ -149,7 +167,13 @@ void ApplicationInterface::worker() {
 
 	while (running) {
 		//TODO: read messages from terminal
+		if(input_messages_->size() > 0) {
+
+		}
 
 		//TODO: Add messages to terminal
+		if(output_messages_->size() > 0) {
+
+		}
 	}
 }
