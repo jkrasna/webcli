@@ -30,17 +30,24 @@ ApplicationInterface::~ApplicationInterface() {
 
 int ApplicationInterface::start_subprocess() {
 	// TODO: Initialize and start application (check application path, fork, set session, create process group, execvp,...)
-	pid_t pid = 0;
 
-	pid = fork();
+	child_pid_ = fork();
 
-	if (pid < 0) {
+	if (child_pid_ < 0) {
 		//TODO: Fork failed - log message
 		return applicationError;
-	} else if (pid == 0) {
-		//TODO: Child logic
-		if(application_data_->isApplicationPathSet()) {
-			execve(application_data_->getApplicationName().c_str(), application_data_->getArgumentList(), NULL);
+	} else if (child_pid_ == 0) {
+		// Child logic
+		int rc = chdir(application_data_->getRunPath());
+		if(rc < 0) {
+			// TODO: Error - unable to change directory to specified dir
+		}
+
+		if(application_data_->isSearchEnabled()) {
+			execvp(application_data_->getApplication(), application_data_->getArgumentList());
+		}
+		else {
+			execv(application_data_->getApplication(), application_data_->getArgumentList());
 		}
 	} else {
 		//TODO: Parent logic

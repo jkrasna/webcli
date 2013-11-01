@@ -33,6 +33,8 @@ private:
 	std::deque<ApplicationConsoleLinePtr> *application_output_messages_;
 
 	std::shared_ptr<ApplicationData> application_data_;
+
+	pid_t child_pid_;
 };
 
 #endif /* WEBCLI_APPLICATION_INTERFACE_H_ */

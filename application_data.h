@@ -3,31 +3,34 @@
 
 #include "precompiled.h"
 
+typedef std::shared_ptr<std::string> stringPtr;
+
 class ApplicationData {
 public:
-	ApplicationData(std::string run_path, std::string application);
-	ApplicationData(std::string run_path, std::string application, std::string application_path);
+	ApplicationData(std::string run_path, std::string application, bool search=false);
 	virtual ~ApplicationData();
 
 	void addNewArgument(char *argument);
 	void addNewArgument(std::string argument);
 
-	std::string getRunPath();
-	std::string getApplicationName();
-	std::string getApplicationPath();
-	bool isApplicationPathSet();
+	const char *getRunPath();
+	const char *getApplication();
+	bool isSearchEnabled();
 	char **getArgumentList();
 
 private:
-	void initialize(std::string run_path, std::string application, std::string application_path);
+	void initialize(std::string run_path, std::string application, bool search);
+	void freeArgumentList();
 
 	std::string *run_path_;
-	std::string *application_name_;
-	std::string *application_path_;
-	bool application_path_set_;
+	std::string *application_;
+	bool search_;
 
-	std::vector<std::string> *arguments_;
+	std::vector<stringPtr> *arguments_;
 	std::mutex *mutex_;
+
+	char **argument_list_;
+	bool arguments_changed_;
 };
 
 #endif /* WEBCLI_APPLICATION_DATA_H_ */

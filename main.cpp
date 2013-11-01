@@ -6,7 +6,7 @@
 
 int main(int argc, char **argv)
 {
-	std::shared_ptr<ApplicationData> application_data(new ApplicationData("/home/jkrasna/", "ls"));
+	std::shared_ptr<ApplicationData> application_data(new ApplicationData("/home/jkrasna/", "ls", true));
 
 	application_data->addNewArgument("-al");
 

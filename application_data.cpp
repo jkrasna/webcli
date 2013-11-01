@@ -2,63 +2,65 @@
 
 #include <string.h>
 
-ApplicationData::ApplicationData(std::string run_path, std::string application) {
-	run_path_ = new std::string(run_path);
-	application_name_ = new std::string(application);
-	application_path_ = NULL;
-	application_path_set_ = false;
-	arguments_ = new std::vector<std::string>();
-	mutex_ = new std::mutex();
+ApplicationData::ApplicationData(std::string run_path, std::string application, bool search) {
+	initialize(run_path, application, search);
 }
 
-ApplicationData::ApplicationData(std::string run_path, std::string application, std::string application_path) {
-	run_path_ = new std::string(run_path);
-	application_name_ = new std::string(application);
-	application_path_ = new std::string(application_path);
-	application_path_set_ = true;
-	arguments_ = new std::vector<std::string>();
-	mutex_ = new std::mutex();
+void ApplicationData::initialize(std::string run_path, std::string application, bool search) {
+	run_path_ 		= new std::string(run_path);
+	application_ 	= new std::string(application);
+	search_ 		= search;
+
+	arguments_		= new std::vector<stringPtr>();
+	mutex_			= new std::mutex();
+
+	argument_list_		= NULL;
+	arguments_changed_	= true;
 }
 
 ApplicationData::~ApplicationData() {
+	freeArgumentList();
 	delete run_path_;
-	delete application_name_;
-	if(application_path_) {
-		delete application_path_;
-	}
+	delete application_;
 	delete arguments_;
 	delete mutex_;
 }
 
-void ApplicationData::addNewArgument(std::string argument) {
-	std::lock_guard<std::mutex> _(*mutex_);
-	arguments_->push_back(argument);
+void ApplicationData::freeArgumentList() {
+	if(!argument_list_) {
+		return;
+	}
+
+	for(int i=0; argument_list_[i]; i++) {
+		free(argument_list_[i]);
+	}
+
+	free(argument_list_);
+	argument_list_ = NULL;
 }
 
 void ApplicationData::addNewArgument(char *argument) {
 	std::lock_guard<std::mutex> _(*mutex_);
-	std::string arg(argument);
-	arguments_->push_back(arg);
+	arguments_->push_back(stringPtr(new std::string(argument)));
+	arguments_changed_ = true;
 }
 
-std::string ApplicationData::getRunPath() {
+void ApplicationData::addNewArgument(std::string argument) {
 	std::lock_guard<std::mutex> _(*mutex_);
-	return *run_path_;
+	arguments_->push_back(stringPtr(new std::string(argument)));
+	arguments_changed_ = true;
 }
 
-std::string ApplicationData::getApplicationName() {
-	std::lock_guard<std::mutex> _(*mutex_);
-	return *application_name_;
+const char *ApplicationData::getRunPath() {
+	return run_path_->c_str();
 }
 
-std::string ApplicationData::getApplicationPath() {
-	std::lock_guard<std::mutex> _(*mutex_);
-	return *application_path_;
+const char *ApplicationData::getApplication() {
+	return application_->c_str();
 }
 
-bool ApplicationData::isApplicationPathSet() {
-	std::lock_guard<std::mutex> _(*mutex_);
-	return application_path_set_;
+bool ApplicationData::isSearchEnabled() {
+	return search_;
 }
 
 char **ApplicationData::getArgumentList() {
@@ -66,18 +68,21 @@ char **ApplicationData::getArgumentList() {
 
 	int size;
 	std::string *argument;
-	char **argument_list;
 
-	size = arguments_->size();
+	if(arguments_changed_ || !argument_list_) {
+		freeArgumentList();
 
-	argument_list = (char **)calloc(size + 1, sizeof(char *));
+		size = arguments_->size();
 
-	for(int i=0; i< size; i++) {
-		argument = &(*arguments_)[i];
+		argument_list_ = (char **)calloc(size + 1, sizeof(char *));
 
-		argument_list[i] = (char *)calloc(argument->size() + 1, sizeof(char));
-		strncpy(argument_list[i], argument->c_str(), argument->size());
+		for(int i=0; i< size; i++) {
+			argument = (*arguments_)[i].get();
+
+			argument_list_[i] = (char *)calloc(argument->size() + 1, sizeof(char));
+			strncpy(argument_list_[i], argument->c_str(), argument->size());
+		}
 	}
 
-	return argument_list;
+	return argument_list_;
 }
