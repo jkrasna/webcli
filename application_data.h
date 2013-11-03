@@ -3,6 +3,8 @@
 
 #include "precompiled.h"
 
+#define READ_LIMIT		255
+
 typedef std::shared_ptr<std::string> stringPtr;
 
 class ApplicationData {

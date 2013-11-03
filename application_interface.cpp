@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <stropts.h>
 #include <stdio.h>
+#include <string.h>
 
 ApplicationInterface::ApplicationInterface(
 		std::shared_ptr<ApplicationData> application_data) {
@@ -13,9 +14,11 @@ ApplicationInterface::ApplicationInterface(
 
 void ApplicationInterface::initialize(
 		std::shared_ptr<ApplicationData> application_data) {
-	application_data_ = application_data;
-	input_messages_ = new std::deque<consoleLinePtr>();
-	output_messages_ = new std::deque<consoleLinePtr>();
+	application_data_ 	= application_data;
+
+	message_index_ 		= 0;
+	input_messages_ 	= new std::deque<consoleLinePtr>();
+	output_messages_ 	= new std::deque<consoleLinePtr>();
 
 	mutex_ = new std::mutex();
 
@@ -41,17 +44,21 @@ ApplicationInterface::~ApplicationInterface() {
 	application_data_.reset();
 }
 
-void ApplicationInterface::addInputMessage(std::string) {
+void ApplicationInterface::addInputMessage(std::string message) {
 	std::lock_guard<std::mutex> _(*mutex_);
+	consoleLinePtr ptr(new ConsoleLine(input_messages_->size() + 1, message.c_str()));
+	input_messages_->push_back(ptr);
 }
 
-void ApplicationInterface::addInputMessage(char *) {
+void ApplicationInterface::addInputMessage(char *message) {
 	std::lock_guard<std::mutex> _(*mutex_);
-
+	consoleLinePtr ptr(new ConsoleLine(input_messages_->size() + 1, message));
+	input_messages_->push_back(ptr);
 }
 
 std::deque<consoleLinePtr> *ApplicationInterface::getOutputMessage(int last_index) {
 	std::lock_guard<std::mutex> _(*mutex_);
+	std::deque<consoleLinePtr> * q = new std::deque<consoleLinePtr>();
 
 	return NULL;
 }
@@ -160,20 +167,67 @@ int ApplicationInterface::start_subprocess() {
 
 void ApplicationInterface::worker() {
 	bool running = true;
+	bool changed = false;
+	int count = 0;
 
 	if (!this->start_subprocess()) {
 		//TODO: throw initialization error
 	}
 
 	while (running) {
-		//TODO: read messages from terminal
+		//TODO: Write messages to terminal
 		if(input_messages_->size() > 0) {
+			std::lock_guard<std::mutex> _(*mutex_);
 
+			consoleLinePtr message_pointer = input_messages_->front();
+			ConsoleLine *message = message_pointer.get();
+
+			count = write(fd_terminal_master_, (void *)message->getLine(), message->getSize());
+			if(count < 0) {
+				// TODO: Error: write failed
+			} else if(count != (message->getSize() * sizeof(char))) {
+				// TODO: Warning: Not all bytes written
+			}
+
+			input_messages_->pop_front();
+			message_pointer.reset();
+			changed = true;
 		}
 
-		//TODO: Add messages to terminal
-		if(output_messages_->size() > 0) {
+		{
+			std::lock_guard<std::mutex> _(*mutex_);
 
+			std::shared_ptr<char> buffer((char *)calloc(READ_LIMIT + 1, sizeof(char)));
+			if(!buffer.get()) {
+				// TODO: ERROR: Failed to allocate message buffer
+				continue;
+			}
+
+			count = 0;
+			do {
+				//TODO: Read messages from terminal
+				count = read(fd_terminal_master_, (void *)buffer.get(), READ_LIMIT);
+				if(count < 0) {
+					// TODO: Error: failed to read anything from the master terminal
+					break;
+				}
+
+				consoleLinePtr message_pointer(new ConsoleLine(message_index_++, buffer.get()));
+				output_messages_->push_back(message_pointer);
+
+				memset((void *)buffer.get(), 0, READ_LIMIT + 1);
+
+				changed = true;
+
+			} while (count > 0);
+
+			buffer.reset();
+		}
+
+		if(!changed) {
+			// TODO: Sleep for a while - give the other threads a chance
+			//std::this_thread::sleep(1);
+			sleep(1);
 		}
 	}
 }

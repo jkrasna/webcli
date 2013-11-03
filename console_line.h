@@ -9,14 +9,17 @@ public:
 	ConsoleLine(unsigned long index, const std::string line);
 	virtual ~ConsoleLine();
 
-	int getIndex();
+	unsigned long getIndex();
 	char *getLine();
+	unsigned long getSize();
+
 
 private:
 	void initialize(unsigned long index, const char *line);
 
 	unsigned long index_;
 	std::shared_ptr<char> line_;
+	unsigned long size_;
 };
 
 typedef std::shared_ptr<ConsoleLine> consoleLinePtr;

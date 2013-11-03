@@ -29,6 +29,7 @@ private:
 
 	std::thread *worker_thread_;
 
+	int message_index_;
 	std::deque<consoleLinePtr> *input_messages_;
 	std::deque<consoleLinePtr> *output_messages_;
 	std::mutex *mutex_;
