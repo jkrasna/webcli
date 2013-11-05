@@ -60,7 +60,11 @@ std::deque<consoleLinePtr> *ApplicationInterface::getOutputMessage(int last_inde
 	std::lock_guard<std::mutex> _(*mutex_);
 	std::deque<consoleLinePtr> * q = new std::deque<consoleLinePtr>();
 
-	return NULL;
+	for(int i = 0; i < output_messages_->size(); i++) {
+		q->push_back(output_messages_->at(i));
+	}
+
+	return q;
 }
 
 //! The function that starts the application as a subprocess
@@ -74,11 +78,11 @@ int ApplicationInterface::start_subprocess() {
 	fd_terminal_master_ = posix_openpt(O_RDWR | O_NOCTTY);
 
 	// Change permissions of the pseudo terminal file and unlock slave side
-	if (fd_terminal_master_ < 0 || grantpt (fd_terminal_master_) == -1
-	|| unlockpt (fd_terminal_master_) == -1
-	|| (slave_name_ = ptsname (fd_terminal_master_)) == NULL) {
+	if (fd_terminal_master_ < 0|| grantpt (fd_terminal_master_) == -1
+			|| unlockpt (fd_terminal_master_) == -1
+			|| (slave_name_ = ptsname (fd_terminal_master_)) == NULL) {
 		// TODO: Log error here
-		return applicationError;
+		printf("ERROR: Failed to open pseudo-terminal!");
 	}
 
 	// TODO: Change into log
@@ -88,17 +92,18 @@ int ApplicationInterface::start_subprocess() {
 	fd_terminal_slave_ = open(slave_name_, O_RDWR | O_NOCTTY);
 	if (fd_terminal_slave_ < 0) {
 		// TODO: Log error here
+		printf("ERROR: Failed to pseudo-terminal slave!");
 		close(fd_terminal_master_);
 		return applicationError;
 	}
 
 	// Load pseudo terminal control modules "ptem" and "ldterm" to slave terminal
-	if (ioctl(fd_terminal_slave_, I_PUSH, "ptem") == -1
-			|| ioctl(fd_terminal_slave_, I_PUSH, "ldterm") == -1) {
-		// TODO: Log error here
-		close(fd_terminal_master_);
-		close(fd_terminal_slave_);
-		return applicationError;
+	if (ioctl(fd_terminal_slave_, I_PUSH, "ptem") == -1) {
+		printf("WARNING: Failed to load 'ptem' slave module!");
+	}
+
+	if (ioctl(fd_terminal_slave_, I_PUSH, "ldterm") == -1) {
+		printf("WARNING: Failed to load 'ldterm' slave module!");
 	}
 
 	// Creating a new subprocess
@@ -107,6 +112,7 @@ int ApplicationInterface::start_subprocess() {
 	// Delegate functionality depending on the process
 	if (child_pid_ < 0) {
 		//TODO: Fork failed - log message
+		printf("ERROR: Failed to load fork process!");
 		close(fd_terminal_master_);
 		close(fd_terminal_slave_);
 		return applicationError;
@@ -118,9 +124,14 @@ int ApplicationInterface::start_subprocess() {
 		close(fd_terminal_master_);
 
 		// Connect slave terminal to input output and error fds
-		dup2(fd_terminal_slave_, 0);
-		dup2(fd_terminal_slave_, 1);
-		dup2(fd_terminal_slave_, 2);
+		if( dup2(fd_terminal_slave_, 0) == -1
+				|| dup2(fd_terminal_slave_, 1) == -1
+				|| dup2(fd_terminal_slave_, 2) == -1 ) {
+
+			printf("ERROR: Failed to reassign FDs!");
+			close(fd_terminal_slave_);
+			return applicationError;
+		}
 
 		// Close slave terminal as we do not need it anymore
 		close(fd_terminal_slave_);
@@ -128,6 +139,7 @@ int ApplicationInterface::start_subprocess() {
 		// Create new session id for the process group
 		if ((child_sid_ = setsid()) == -1) {
 			// TODO: Error - unable to create new session
+			printf("ERROR: Failed to new session ID!");
 			return applicationError;
 		}
 
@@ -135,6 +147,7 @@ int ApplicationInterface::start_subprocess() {
 		int rc = chdir(application_data_->getRunPath());
 		if (rc < 0) {
 			// TODO: Error - unable to change directory to specified dir
+			printf("ERROR: Failed change directory to expected location!");
 			return applicationError;
 		}
 
@@ -153,6 +166,7 @@ int ApplicationInterface::start_subprocess() {
 
 		fprintf(stderr, "ERROR: Unable to start: '%s' - exec failed\n",
 				application_data_->getApplication());
+
 		return applicationError;
 	} else {
 		// This is the parent process
@@ -160,6 +174,11 @@ int ApplicationInterface::start_subprocess() {
 		// Close slave terminal as we do not need it anymore
 		close(fd_terminal_slave_);
 
+		char str[40];
+		sprintf(str, "Child PID = %d!", child_pid_);
+		std::lock_guard<std::mutex> _(*mutex_);
+		consoleLinePtr message_pointer(new ConsoleLine(message_index_++, str));
+						output_messages_->push_back(message_pointer);
 	}
 
 	return applicationSuccess;
@@ -170,8 +189,14 @@ void ApplicationInterface::worker() {
 	bool changed = false;
 	int count = 0;
 
-	if (!this->start_subprocess()) {
+	if ((count = this->start_subprocess()) != applicationSuccess) {
 		//TODO: throw initialization error
+		char str[40];
+		sprintf(str, "Subprocess error! RC = %d!", count);
+		consoleLinePtr message_pointer(new ConsoleLine(message_index_++, str));
+								output_messages_->push_back(message_pointer);
+		// TODO: Change to logging
+		//printf("ERROR: Failed to start subprocess!");
 	}
 
 	while (running) {

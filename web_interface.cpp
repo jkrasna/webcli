@@ -35,6 +35,9 @@ void WebInterface::process() {
 	FCGX_Init();
 	FCGX_InitRequest(&request, 0, 0);
 
+	std::deque<consoleLinePtr> * console_messages = NULL;
+	consoleLinePtr mp = NULL;
+
 	while (FCGX_Accept_r(&request) == 0) {
 		fcgi_streambuf cin_fcgi_streambuf(request.in);
 		fcgi_streambuf cout_fcgi_streambuf(request.out);
@@ -44,10 +47,30 @@ void WebInterface::process() {
 		cout.rdbuf(&cout_fcgi_streambuf);
 		cerr.rdbuf(&cerr_fcgi_streambuf);
 
-		cout << "Content-type: text/html\r\n" << "\r\n" << "<html>\n"
-				<< "  <head>\n" << "    <title>Hello, World!</title>\n"
-				<< "  </head>\n" << "  <body>\n"
-				<< "    <h1>Hello, World!</h1>\n" << "  </body>\n"
+		console_messages = application_interface_->getOutputMessage(0);
+
+		cout 	<< "Content-type: text/html\r\n"
+				<< "\r\n"
+				<< "<html>\n"
+				<< "\t<head>\n"
+				<< "\t\t<title>Hello, World!</title>\n"
+				<< "\t</head>\n"
+				<< "\t<body>\n"
+				<< "\t\t<h1>Hello, World!</h1>\n";
+
+		if (console_messages->size() == 0) {
+			cout << "\t\t<p>Empty messages!</p>\n";
+		}
+		else {
+			cout << "\t\t<table>\n";
+			for (int i = 0; i < console_messages->size(); i++) {
+				mp = console_messages->at(i);
+				cout << "\t\t<tr><td>" << mp->getIndex() << "</td><td>" << mp->getLine() << "</td></tr>\n";
+			}
+			cout << "\t\t</table>\n";
+		}
+
+		cout 	<< "\t</body>\n"
 				<< "</html>\n";
 
 		// Note: the fcgi_streambuf destructor will auto flush
