@@ -1,32 +1,59 @@
 #ifndef WEBCLI_LOGGING_H_
 #define WEBCLI_LOGGING_H_
 
-#include <iostream>
-#include <fstream>
-#include <string>
+#include "shared.h"
+#include "log_sink.h"
 
-enum LogLevel {
-	LOG_LEVEL_SYSTEM,
-	LOG_LEVEL_ERROR,
-	LOG_LEVEL_WARNING,
-	LOG_LEVEL_INFO,
-	LOG_LEVEL_VERBOSE
-};
+#define	LL_NO 			0	/** No logging level */
+#define	LL_CRITICAL		1	/** Critical log level */
+#define LL_ERROR		2	/** Error log level */
+#define LL_WARNING		3	/** Warning log level */
+#define LL_DEBUG		4	/** Debug log level */
+#define LL_TRACE		5	/** Trace log level */
+#define LL_ALL			6	/** All logging level */
+
+#define LOG_EXPAND(level, args...) 	LOG_CALL(level, __FILE__, __LINE__, args)
+#define LOG_CALL(level, file, line, args...) \
+do{\
+	const size_t buffer_size = 255;\
+	char buffer[buffer_size];\
+	snprintf(&buffer[0], buffer_size, "%s, '%s:%d': ", Logging::get_level_string(level), file, line);\
+	std::string message(buffer);\
+	snprintf(&buffer[0], buffer_size, args);\
+	message.append(buffer);\
+	Logging::log(level, message);\
+}while(0)
+
+#define LOG_CRT(args...) LOG_EXPAND(LL_CRITICAL, args)
+#define LOG_ERR(args...) LOG_EXPAND(LL_ERROR, args)
+#define LOG_WRN(args...) LOG_EXPAND(LL_WARNING, args)
+#define LOG_DBG(args...) LOG_EXPAND(LL_DEBUG, args)
+#define LOG_TRC(args...) LOG_EXPAND(LL_TRACE, args)
+
+typedef std::unique_ptr<LogSink> LogSinkPtr;
 
 class Logging {
 public:
-	Logging(std::string fileName);
-	virtual ~Logging(void);
+	static Logging& get_instance()
+	{
+		static Logging instance;
+		return instance;
+	}
 
-	void set_log_level(int log_level);
-	bool is_open(void);
+	static void add_sink(LogSink *sink);
 
-	static void log_line(int log_level, char *line);
+	static void log(int level, std::string message);
+
+	static const char *get_level_string(int level);
 
 private:
-	int log_level_;
-	std::ofstream *log_file_;
-	bool open_;
+	Logging();
+	Logging(Logging const&);            // Don't Implement
+	void operator=(Logging const&); 	// Don't implement
+	virtual ~Logging(void);
+
+	std::vector<LogSinkPtr> *sink_list_;
+	std::mutex *mutex_;
 };
 
 #endif /* WEBCLI_LOGGING_H_ */
