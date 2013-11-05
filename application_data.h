@@ -1,7 +1,7 @@
 #ifndef WEBCLI_APPLICATION_DATA_H_
 #define WEBCLI_APPLICATION_DATA_H_
 
-#include "precompiled.h"
+#include "shared.h"
 
 #define READ_LIMIT		255
 

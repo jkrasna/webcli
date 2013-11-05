@@ -1,7 +1,7 @@
 #ifndef WEBCLI_APPLICATION_CONSOLE_LINE_H_
 #define WEBCLI_APPLICATION_CONSOLE_LINE_H_
 
-#include "precompiled.h"
+#include "shared.h"
 
 class ConsoleLine {
 public:

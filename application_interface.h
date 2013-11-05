@@ -1,7 +1,7 @@
 #ifndef WEBCLI_APPLICATION_INTERFACE_H_
 #define WEBCLI_APPLICATION_INTERFACE_H_
 
-#include "precompiled.h"
+#include "shared.h"
 #include "application_data.h"
 #include "console_line.h"
 

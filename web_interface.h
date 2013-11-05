@@ -1,7 +1,7 @@
 #ifndef WEBCLI_WEB_INTERFACE_H_
 #define WEBCLI_WEB_INTERFACE_H_
 
-#include "precompiled.h"
+#include "shared.h"
 
 class ApplicationInterface;
 
