@@ -1,5 +1,5 @@
-#ifndef WEBCLI_APPLICATION_CONSOLE_LINE_H_
-#define WEBCLI_APPLICATION_CONSOLE_LINE_H_
+#ifndef WEBCLI_CONSOLE_LINE_H_
+#define WEBCLI_CONSOLE_LINE_H_
 
 #include "shared.h"
 
@@ -24,4 +24,4 @@ private:
 
 typedef std::shared_ptr<ConsoleLine> consoleLinePtr;
 
-#endif /* WEBCLI_APPLICATION_CONSOLE_LINE_H_ */
+#endif /* WEBCLI_CONSOLE_LINE_H_ */

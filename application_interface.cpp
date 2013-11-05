@@ -6,6 +6,9 @@
 #include <stropts.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
+
+#include "logging.h"
 
 ApplicationInterface::ApplicationInterface(
 		std::shared_ptr<ApplicationData> application_data) {
@@ -58,77 +61,88 @@ void ApplicationInterface::addInputMessage(char *message) {
 
 std::deque<consoleLinePtr> *ApplicationInterface::getOutputMessage(int last_index) {
 	std::lock_guard<std::mutex> _(*mutex_);
-	std::deque<consoleLinePtr> * q = new std::deque<consoleLinePtr>();
+	std::deque<consoleLinePtr> * queue = new std::deque<consoleLinePtr>();
 
-	for(int i = 0; i < output_messages_->size(); i++) {
-		q->push_back(output_messages_->at(i));
+	for(consoleLinePtr line_ptr : *output_messages_) {
+		queue->push_back(line_ptr);
 	}
 
-	return q;
+	return queue;
 }
 
 //! The function that starts the application as a subprocess
 
-//! This function opens the pseudoterminal master and then forks another
-//! process with the child pseudoterminal set. It then returns allowing
+//! This function opens the pseudo-terminal master and then forks another
+//! process with the child pseudo-terminal set. It then returns allowing
 //! for communication between the terminals.
 int ApplicationInterface::start_subprocess() {
+	int errno_save = 0;
 
-	// Open master pseudoterminal
+	// Open master pseudo-terminal
 	fd_terminal_master_ = posix_openpt(O_RDWR | O_NOCTTY);
+	errno_save = errno;
 
-	// Change permissions of the pseudo terminal file and unlock slave side
-	if (fd_terminal_master_ < 0|| grantpt (fd_terminal_master_) == -1
-			|| unlockpt (fd_terminal_master_) == -1
-			|| (slave_name_ = ptsname (fd_terminal_master_)) == NULL) {
-		// TODO: Log error here
-		printf("ERROR: Failed to open pseudo-terminal!");
+	if (fd_terminal_master_ < 0) {
+		LOG_ERR("Failed to open master pseudo-terminal! ERRNO = %d", errno_save);
 	}
 
-	// TODO: Change into log
-	printf("slave device is: %s\n", slave_name_);
+	// Change permissions of the pseudo terminal file and unlock slave side
+	if( grantpt (fd_terminal_master_) == -1
+			|| unlockpt (fd_terminal_master_) == -1
+			|| (slave_name_ = ptsname (fd_terminal_master_)) == NULL) {
+		errno_save = errno;
+		LOG_ERR("Failed to unlock master pseudo-terminal! ERRNO = %d", errno_save);
+	}
+
+	LOG_DBG("slave device is: %s\n", slave_name_);
 
 	// Open slave terminal - needed for child application
 	fd_terminal_slave_ = open(slave_name_, O_RDWR | O_NOCTTY);
+	errno_save = errno;
+
 	if (fd_terminal_slave_ < 0) {
-		// TODO: Log error here
-		printf("ERROR: Failed to pseudo-terminal slave!");
+		LOG_ERR("Failed to open slave pseudo-terminal! ERRNO = %d", errno_save);
 		close(fd_terminal_master_);
 		return applicationError;
 	}
 
 	// Load pseudo terminal control modules "ptem" and "ldterm" to slave terminal
+
 	if (ioctl(fd_terminal_slave_, I_PUSH, "ptem") == -1) {
-		printf("WARNING: Failed to load 'ptem' slave module!");
+		errno_save = errno;
+		LOG_WRN("Failed to load 'ptem' slave module! ERRNO = %d", errno_save);
 	}
 
 	if (ioctl(fd_terminal_slave_, I_PUSH, "ldterm") == -1) {
-		printf("WARNING: Failed to load 'ldterm' slave module!");
+		errno_save = errno;
+		LOG_WRN("Failed to load 'ldterm' slave module! ERRNO = %d", errno_save);
 	}
 
 	// Creating a new subprocess
 	child_pid_ = fork();
+	errno_save = errno;
 
 	// Delegate functionality depending on the process
 	if (child_pid_ < 0) {
-		//TODO: Fork failed - log message
-		printf("ERROR: Failed to load fork process!");
+
+		LOG_ERR("Failed to fork child process! ERRNO = %d", errno_save);
 		close(fd_terminal_master_);
 		close(fd_terminal_slave_);
 		return applicationError;
 
 	} else if (child_pid_ == 0) {
-		// This is the child process
+		// This is the CHILD process
 
-		// Close master pseudoterminal file descriptor
+		// Close master pseudo-terminal file descriptor
 		close(fd_terminal_master_);
 
-		// Connect slave terminal to input output and error fds
+		// Connect slave terminal to input output and error file descriptors
 		if( dup2(fd_terminal_slave_, 0) == -1
 				|| dup2(fd_terminal_slave_, 1) == -1
 				|| dup2(fd_terminal_slave_, 2) == -1 ) {
+			errno_save = errno;
+			LOG_ERR("Failed to reassign slave FDs! ERRNO = %d", errno_save);
 
-			printf("ERROR: Failed to reassign FDs!");
 			close(fd_terminal_slave_);
 			return applicationError;
 		}
@@ -138,16 +152,17 @@ int ApplicationInterface::start_subprocess() {
 
 		// Create new session id for the process group
 		if ((child_sid_ = setsid()) == -1) {
-			// TODO: Error - unable to create new session
-			printf("ERROR: Failed to new session ID!");
+			errno_save = errno;
+			LOG_ERR("Failed to create a new session ID! ERRNO = %d", errno_save);
 			return applicationError;
 		}
 
 		// Change working directory to the configured one
 		int rc = chdir(application_data_->getRunPath());
+		errno_save = errno;
+
 		if (rc < 0) {
-			// TODO: Error - unable to change directory to specified dir
-			printf("ERROR: Failed change directory to expected location!");
+			LOG_ERR("Failed to change directory! ERRNO = %d", errno_save);
 			return applicationError;
 		}
 
@@ -157,19 +172,21 @@ int ApplicationInterface::start_subprocess() {
 			// the system search for it in the standard paths
 			execvp(application_data_->getApplication(),
 					application_data_->getArgumentList());
+			errno_save = errno;
 		} else {
 			// This requires that the getApplication method returns the
 			// full path of the application
 			execv(application_data_->getApplication(),
 					application_data_->getArgumentList());
+			errno_save = errno;
 		}
 
-		fprintf(stderr, "ERROR: Unable to start: '%s' - exec failed\n",
-				application_data_->getApplication());
+		LOG_CRT("ERROR: Unable to start: '%s' - exec failed! ERRNO = %d",
+				application_data_->getApplication(), errno_save);
 
 		return applicationError;
 	} else {
-		// This is the parent process
+		// This is the PARENT process
 
 		// Close slave terminal as we do not need it anymore
 		close(fd_terminal_slave_);
@@ -250,7 +267,7 @@ void ApplicationInterface::worker() {
 		}
 
 		if(!changed) {
-			// TODO: Sleep for a while - give the other threads a chance
+			// Sleep for a while - give the other threads a chance
 			//std::this_thread::sleep(1);
 			sleep(1);
 		}

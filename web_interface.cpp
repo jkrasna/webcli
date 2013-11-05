@@ -47,8 +47,6 @@ void WebInterface::process() {
 		cout.rdbuf(&cout_fcgi_streambuf);
 		cerr.rdbuf(&cerr_fcgi_streambuf);
 
-		console_messages = application_interface_->getOutputMessage(0);
-
 		cout 	<< "Content-type: text/html\r\n"
 				<< "\r\n"
 				<< "<html>\n"
@@ -58,6 +56,7 @@ void WebInterface::process() {
 				<< "\t<body>\n"
 				<< "\t\t<h1>Hello, World!</h1>\n";
 
+		console_messages = application_interface_->getOutputMessage(0);
 		if (console_messages->size() == 0) {
 			cout << "\t\t<p>Empty messages!</p>\n";
 		}
@@ -69,6 +68,7 @@ void WebInterface::process() {
 			}
 			cout << "\t\t</table>\n";
 		}
+		delete console_messages;
 
 		cout 	<< "\t</body>\n"
 				<< "</html>\n";
