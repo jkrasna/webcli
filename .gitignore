@@ -16,3 +16,9 @@
 .project
 .cproject
 .settings
+
+# Logs
+*.log
+
+# Executable
+webcli
