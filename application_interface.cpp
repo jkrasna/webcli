@@ -171,13 +171,13 @@ int ApplicationInterface::start_subprocess() {
 			// If we do not know the path of the application we can let
 			// the system search for it in the standard paths
 			execvp(application_data_->getApplication(),
-					application_data_->getArgumentList());
+					(char **)application_data_->getArgumentList());
 			errno_save = errno;
 		} else {
 			// This requires that the getApplication method returns the
 			// full path of the application
 			execv(application_data_->getApplication(),
-					application_data_->getArgumentList());
+					(char **)application_data_->getArgumentList());
 			errno_save = errno;
 		}
 

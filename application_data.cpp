@@ -19,24 +19,13 @@ void ApplicationData::initialize(std::string run_path, std::string application, 
 }
 
 ApplicationData::~ApplicationData() {
-	freeArgumentList();
+	if(argument_list_) {
+		delete argument_list_;
+	}
 	delete run_path_;
 	delete application_;
 	delete arguments_;
 	delete mutex_;
-}
-
-void ApplicationData::freeArgumentList() {
-	if(!argument_list_) {
-		return;
-	}
-
-	for(int i=0; argument_list_[i]; i++) {
-		free(argument_list_[i]);
-	}
-
-	free(argument_list_);
-	argument_list_ = NULL;
 }
 
 void ApplicationData::addNewArgument(char *argument) {
@@ -63,25 +52,32 @@ bool ApplicationData::isSearchEnabled() {
 	return search_;
 }
 
-char **ApplicationData::getArgumentList() {
+const char **ApplicationData::getArgumentList() {
 	std::lock_guard<std::mutex> _(*mutex_);
 
-	int size;
-	std::string *argument;
-
+	// Only create argument list if it was changed
+	// or if it was not created before
 	if(arguments_changed_ || !argument_list_) {
-		freeArgumentList();
+		// First free argument list
+		delete argument_list_;
 
-		size = arguments_->size();
+		// Get size of the arguments vector
+		int size = arguments_->size();
 
-		argument_list_ = (char **)calloc(size + 1, sizeof(char *));
+		// Allocate memory for the argument pointer list
+		argument_list_ = new const char *[size + 2];
 
-		for(int i=0; i< size; i++) {
-			argument = (*arguments_)[i].get();
+		// The first parameter must be the program name
+		argument_list_[0] = application_->c_str();
 
-			argument_list_[i] = (char *)calloc(argument->size() + 1, sizeof(char));
-			strncpy(argument_list_[i], argument->c_str(), argument->size());
+		std::string *argument;
+		for(int i=0; i < size; i++) {
+			argument = arguments_->at(i).get();
+			argument_list_[i+1] = argument->c_str();
 		}
+
+		// The pointer list must be NULL-terminated
+		argument_list_[size+1] = NULL;
 	}
 
 	return argument_list_;

@@ -18,11 +18,10 @@ public:
 	const char *getRunPath();
 	const char *getApplication();
 	bool isSearchEnabled();
-	char **getArgumentList();
+	const char **getArgumentList();
 
 private:
 	void initialize(std::string run_path, std::string application, bool search);
-	void freeArgumentList();
 
 	std::string *run_path_;
 	std::string *application_;
@@ -31,7 +30,7 @@ private:
 	std::vector<stringPtr> *arguments_;
 	std::mutex *mutex_;
 
-	char **argument_list_;
+	const char **argument_list_;
 	bool arguments_changed_;
 };
 
