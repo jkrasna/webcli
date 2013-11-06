@@ -15,13 +15,13 @@
 #define LOG_EXPAND(level, args...) 	LOG_CALL(level, __FILE__, __LINE__, args)
 #define LOG_CALL(level, file, line, args...) \
 do{\
-	const size_t buffer_size = 255;\
-	char buffer[buffer_size];\
-	snprintf(&buffer[0], buffer_size, "%s'%s:%d': ", Logging::get_level_string(level), file, line);\
-	std::string message(buffer);\
-	snprintf(&buffer[0], buffer_size, args);\
-	message.append(buffer);\
-	Logging::log(level, message);\
+	const size_t __buffer_size = 255;\
+	char __buffer[__buffer_size];\
+	snprintf(&__buffer[0], __buffer_size, "%s'%s:%d': ", Logging::get_level_string(level), file, line);\
+	std::string __message(__buffer);\
+	snprintf(&__buffer[0], __buffer_size, args);\
+	__message.append(__buffer);\
+	Logging::log(level, __message);\
 }while(0)
 
 #define LOG_CRT(args...) LOG_EXPAND(LL_CRITICAL, args)
