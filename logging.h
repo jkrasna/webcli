@@ -17,7 +17,7 @@
 do{\
 	const size_t buffer_size = 255;\
 	char buffer[buffer_size];\
-	snprintf(&buffer[0], buffer_size, "%s, '%s:%d': ", Logging::get_level_string(level), file, line);\
+	snprintf(&buffer[0], buffer_size, "%s'%s:%d': ", Logging::get_level_string(level), file, line);\
 	std::string message(buffer);\
 	snprintf(&buffer[0], buffer_size, args);\
 	message.append(buffer);\

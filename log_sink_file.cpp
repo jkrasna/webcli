@@ -23,4 +23,5 @@ void LogSinkFile::log(int level, std::string message) {
 	}
 
 	log_file_->write(message.c_str(), message.size());
+	log_file_->flush();
 }
