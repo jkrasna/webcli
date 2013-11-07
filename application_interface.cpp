@@ -47,19 +47,19 @@ ApplicationInterface::~ApplicationInterface() {
 	application_data_.reset();
 }
 
-void ApplicationInterface::addInputMessage(std::string message) {
+void ApplicationInterface::add_input_message(std::string message) {
 	std::lock_guard<std::mutex> _(*mutex_);
 	consoleLinePtr ptr(new ConsoleLine(input_messages_->size() + 1, message.c_str()));
 	input_messages_->push_back(ptr);
 }
 
-void ApplicationInterface::addInputMessage(char *message) {
+void ApplicationInterface::add_input_message(char *message) {
 	std::lock_guard<std::mutex> _(*mutex_);
 	consoleLinePtr ptr(new ConsoleLine(input_messages_->size() + 1, message));
 	input_messages_->push_back(ptr);
 }
 
-std::deque<consoleLinePtr> *ApplicationInterface::getOutputMessage(int last_index) {
+std::deque<consoleLinePtr> *ApplicationInterface::get_output_message(int last_index) {
 	std::lock_guard<std::mutex> _(*mutex_);
 	std::deque<consoleLinePtr> * queue = new std::deque<consoleLinePtr>();
 
@@ -158,7 +158,7 @@ int ApplicationInterface::start_subprocess() {
 		}
 
 		// Change working directory to the configured one
-		int rc = chdir(application_data_->getRunPath());
+		int rc = chdir(application_data_->get_run_path());
 		errno_save = errno;
 
 		if (rc < 0) {
@@ -167,22 +167,22 @@ int ApplicationInterface::start_subprocess() {
 		}
 
 		// Replace exiting child process with what we want to execute
-		if (application_data_->isSearchEnabled()) {
+		if (application_data_->is_search_enabled()) {
 			// If we do not know the path of the application we can let
 			// the system search for it in the standard paths
-			execvp(application_data_->getApplication(),
-					(char **)application_data_->getArgumentList());
+			execvp(application_data_->get_application(),
+					(char **)application_data_->get_argument_list());
 			errno_save = errno;
 		} else {
 			// This requires that the getApplication method returns the
 			// full path of the application
-			execv(application_data_->getApplication(),
-					(char **)application_data_->getArgumentList());
+			execv(application_data_->get_application(),
+					(char **)application_data_->get_argument_list());
 			errno_save = errno;
 		}
 
 		LOG_CRT("ERROR: Unable to start: '%s' - exec failed! ERRNO = %d",
-				application_data_->getApplication(), errno_save);
+				application_data_->get_application(), errno_save);
 
 		return applicationError;
 	} else {
@@ -195,7 +195,7 @@ int ApplicationInterface::start_subprocess() {
 		sprintf(str, "Child PID = %d!", child_pid_);
 		std::lock_guard<std::mutex> _(*mutex_);
 		consoleLinePtr message_pointer(new ConsoleLine(message_index_++, str));
-						output_messages_->push_back(message_pointer);
+		output_messages_->push_back(message_pointer);
 	}
 
 	return applicationSuccess;
@@ -212,8 +212,10 @@ void ApplicationInterface::worker() {
 		sprintf(str, "Subprocess error! RC = %d!", count);
 		consoleLinePtr message_pointer(new ConsoleLine(message_index_++, str));
 								output_messages_->push_back(message_pointer);
-		// TODO: Change to logging
-		//printf("ERROR: Failed to start subprocess!");
+
+		LOG_CRT("Failed to start subprocess!");
+		running = false;
+		return;
 	}
 
 	while (running) {
@@ -224,10 +226,10 @@ void ApplicationInterface::worker() {
 			consoleLinePtr message_pointer = input_messages_->front();
 			ConsoleLine *message = message_pointer.get();
 
-			count = write(fd_terminal_master_, (void *)message->getLine(), message->getSize());
+			count = write(fd_terminal_master_, (void *)message->get_line(), message->get_size());
 			if(count < 0) {
 				// TODO: Error: write failed
-			} else if(count != (message->getSize() * sizeof(char))) {
+			} else if(count != (message->get_size() * sizeof(char))) {
 				// TODO: Warning: Not all bytes written
 			}
 

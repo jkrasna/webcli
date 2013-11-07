@@ -13,6 +13,9 @@ public:
 	void process(void);
 private:
 	std::shared_ptr<ApplicationInterface> application_interface_;
+
+	std::thread *worker_thread_;
+	std::mutex *mutex_;
 };
 
 #endif /* WEBCLI_WEB_INTERFACE_H_ */

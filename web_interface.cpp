@@ -1,16 +1,10 @@
-/*
- * web_interface.cpp
- *
- *  Created on: Oct 6, 2013
- *      Author: jkrasna
- */
-
 #include "web_interface.h"
 
 #include <fcgio.h>
 #include <fcgiapp.h>
 
 #include "application_interface.h"
+#include "logging.h"
 
 using namespace std;
 
@@ -30,18 +24,21 @@ void WebInterface::process() {
 
 	FCGX_Request request;
 
-	cout << "Before FCGI init!" << endl;
+	LOG_TRC("Before FCGI init!");
 
 	FCGX_Init();
 	FCGX_InitRequest(&request, 0, 0);
 
 	std::deque<consoleLinePtr> * console_messages = NULL;
-	consoleLinePtr mp = NULL;
+
+	LOG_TRC("After FCGI init!");
 
 	while (FCGX_Accept_r(&request) == 0) {
 		fcgi_streambuf cin_fcgi_streambuf(request.in);
 		fcgi_streambuf cout_fcgi_streambuf(request.out);
 		fcgi_streambuf cerr_fcgi_streambuf(request.err);
+
+		LOG_TRC("Processing request!");
 
 		cin.rdbuf(&cin_fcgi_streambuf);
 		cout.rdbuf(&cout_fcgi_streambuf);
@@ -56,18 +53,22 @@ void WebInterface::process() {
 				<< "\t<body>\n"
 				<< "\t\t<h1>Hello, World!</h1>\n";
 
-		console_messages = application_interface_->getOutputMessage(0);
+		LOG_TRC("Before requesting messages from app interface!");
+		console_messages = application_interface_->get_output_message(0);
+		LOG_TRC("After requesting messages from app interface!");
 		if (console_messages->size() == 0) {
 			cout << "\t\t<p>Empty messages!</p>\n";
 		}
 		else {
-			cout << "\t\t<table>\n";
-			for (int i = 0; i < console_messages->size(); i++) {
-				mp = console_messages->at(i);
-				cout << "\t\t<tr><td>" << mp->getIndex() << "</td><td>" << mp->getLine() << "</td></tr>\n";
+			cout << "\t\t<table style='border:1px solid #CCC;'>\n";
+			//for (int i = 0; i < console_messages->size(); i++) {
+			for (consoleLinePtr &console_line : *console_messages) {
+				cout << "\t\t<tr><td>" << console_line->get_index() << "</td><td>" << console_line->get_line() << "</td></tr>\n";
 			}
 			cout << "\t\t</table>\n";
 		}
+
+		console_messages->clear();
 		delete console_messages;
 
 		cout 	<< "\t</body>\n"

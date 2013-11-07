@@ -9,9 +9,9 @@ public:
 	ConsoleLine(unsigned long index, const std::string line);
 	virtual ~ConsoleLine();
 
-	unsigned long getIndex();
-	char *getLine();
-	unsigned long getSize();
+	unsigned long get_index();
+	char *get_line();
+	unsigned long get_size();
 
 
 private:

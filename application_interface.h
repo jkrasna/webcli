@@ -16,10 +16,9 @@ public:
 	ApplicationInterface(std::shared_ptr<ApplicationData> application_data);
 	virtual ~ApplicationInterface();
 
-	void addInputMessage(std::string);
-	void addInputMessage(char *);
-	std::deque<consoleLinePtr> *getOutputMessage(
-			int last_index);
+	void add_input_message(std::string);
+	void add_input_message(char *);
+	std::deque<consoleLinePtr> *get_output_message(int last_index);
 
 private:
 	void initialize(std::shared_ptr<ApplicationData> application_data);
@@ -28,11 +27,11 @@ private:
 	int start_subprocess();
 
 	std::thread *worker_thread_;
+	std::mutex *mutex_;
 
 	int message_index_;
 	std::deque<consoleLinePtr> *input_messages_;
 	std::deque<consoleLinePtr> *output_messages_;
-	std::mutex *mutex_;
 
 	std::shared_ptr<ApplicationData> application_data_;
 

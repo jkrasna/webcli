@@ -23,14 +23,14 @@ ConsoleLine::~ConsoleLine() {
 	line_.reset();
 }
 
-unsigned long ConsoleLine::getIndex() {
+unsigned long ConsoleLine::get_index() {
 	return index_;
 }
 
-char *ConsoleLine::getLine() {
+char *ConsoleLine::get_line() {
 	return line_.get();
 }
 
-unsigned long ConsoleLine::getSize() {
+unsigned long ConsoleLine::get_size() {
 	return size_;
 }

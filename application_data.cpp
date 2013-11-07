@@ -28,31 +28,31 @@ ApplicationData::~ApplicationData() {
 	delete mutex_;
 }
 
-void ApplicationData::addNewArgument(char *argument) {
+void ApplicationData::add_new_argument(char *argument) {
 	std::lock_guard<std::mutex> _(*mutex_);
 	arguments_->push_back(stringPtr(new std::string(argument)));
 	arguments_changed_ = true;
 }
 
-void ApplicationData::addNewArgument(std::string argument) {
+void ApplicationData::add_new_argument(std::string argument) {
 	std::lock_guard<std::mutex> _(*mutex_);
 	arguments_->push_back(stringPtr(new std::string(argument)));
 	arguments_changed_ = true;
 }
 
-const char *ApplicationData::getRunPath() {
+const char *ApplicationData::get_run_path() {
 	return run_path_->c_str();
 }
 
-const char *ApplicationData::getApplication() {
+const char *ApplicationData::get_application() {
 	return application_->c_str();
 }
 
-bool ApplicationData::isSearchEnabled() {
+bool ApplicationData::is_search_enabled() {
 	return search_;
 }
 
-const char **ApplicationData::getArgumentList() {
+const char **ApplicationData::get_argument_list() {
 	std::lock_guard<std::mutex> _(*mutex_);
 
 	// Only create argument list if it was changed

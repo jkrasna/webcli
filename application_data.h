@@ -12,13 +12,13 @@ public:
 	ApplicationData(std::string run_path, std::string application, bool search=false);
 	virtual ~ApplicationData();
 
-	void addNewArgument(char *argument);
-	void addNewArgument(std::string argument);
+	void add_new_argument(char *argument);
+	void add_new_argument(std::string argument);
 
-	const char *getRunPath();
-	const char *getApplication();
-	bool isSearchEnabled();
-	const char **getArgumentList();
+	const char *get_run_path();
+	const char *get_application();
+	bool is_search_enabled();
+	const char **get_argument_list();
 
 private:
 	void initialize(std::string run_path, std::string application, bool search);
