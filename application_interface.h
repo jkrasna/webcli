@@ -20,11 +20,20 @@ public:
 	void add_input_message(char *);
 	std::deque<consoleLinePtr> *get_output_message(int last_index);
 
+	inline bool is_running() {
+		return running_;
+	}
+
+	void stop();
+
 private:
 	void initialize(std::shared_ptr<ApplicationData> application_data);
 	void worker();
 
 	int start_subprocess();
+
+	bool running_;
+	bool stop_flag_;
 
 	std::thread *worker_thread_;
 	std::mutex *mutex_;

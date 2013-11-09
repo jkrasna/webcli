@@ -1,8 +1,9 @@
 #include "log_sink_file.h"
 
 #include <stdarg.h>
+#include <ctime>
 
-#define STRING_BUFFER		1024
+#define TIME_BUFFER_LENGTH		40
 
 LogSinkFile::LogSinkFile(int level, const std::string filename) : LogSink(level) {
 	log_file_ = (std::ofstream *)new std::ofstream(filename);
@@ -22,6 +23,13 @@ void LogSinkFile::log(int level, std::string message) {
 		message.append("\n");
 	}
 
+	int written = 0;
+	char time_string[TIME_BUFFER_LENGTH];
+	time_t now = time(NULL);
+	tm *now_local = localtime(&now);
+	written = strftime(time_string, TIME_BUFFER_LENGTH, "%Y-%m-%d %H:%M:%S ", now_local);
+
+	log_file_->write(time_string, written);
 	log_file_->write(message.c_str(), message.size());
 	log_file_->flush();
 }

@@ -14,10 +14,14 @@ public:
 
 	void run();
 
+	void process_signal(int signum);
+
 private:
 	std::shared_ptr<ApplicationData> application_data_;
 	std::shared_ptr<ApplicationInterface> application_interface_;
 	std::shared_ptr<WebInterface> web_interface_;
+
+	bool running_;
 };
 
 #endif /* WEBCLI_RUN_FLOW_H_ */

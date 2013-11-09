@@ -1,6 +1,12 @@
 #include "control_flow.h"
 
+#include "logging.h"
+
+#include <unistd.h>
+#include <signal.h>
+
 ControlFlow::ControlFlow() {
+	running_ = true;
 	application_data_.reset(new ApplicationData("/home/jkrasna/", "nc", true));
 
 	application_data_->add_new_argument((char *)"-l");
@@ -18,8 +24,26 @@ ControlFlow::~ControlFlow() {
 }
 
 void ControlFlow::run() {
-	if(web_interface_) {
-		web_interface_->process();
+	while(running_) {
+		usleep(100);
+	}
+
+	LOG_DBG("Stopping control flow main loop!");
+
+	web_interface_->stop();
+	application_interface_->stop();
+}
+
+void ControlFlow::process_signal(int signum) {
+	switch(signum) {
+	case SIGTERM:
+	case SIGPIPE:
+	case SIGUSR1:
+		running_ = false;
+		LOG_DBG("Signal received: %d", signum);
+		break;
+	default:
+		LOG_WRN("Unknown signal received: %d", signum);
 	}
 }
 

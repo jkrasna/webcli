@@ -7,8 +7,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <signal.h>
+#include <sys/select.h>
 
 #include "logging.h"
+
+#define MILI_TO_MICRO(mili) 	mili*1000
 
 ApplicationInterface::ApplicationInterface(
 		std::shared_ptr<ApplicationData> application_data) {
@@ -18,6 +22,9 @@ ApplicationInterface::ApplicationInterface(
 void ApplicationInterface::initialize(
 		std::shared_ptr<ApplicationData> application_data) {
 	application_data_ 	= application_data;
+
+	running_			= true;
+	stop_flag_			= false;
 
 	message_index_ 		= 0;
 	input_messages_ 	= new std::deque<consoleLinePtr>();
@@ -45,6 +52,19 @@ ApplicationInterface::~ApplicationInterface() {
 	delete output_messages_;
 
 	application_data_.reset();
+}
+
+void ApplicationInterface::stop() {
+	stop_flag_ = true;
+
+	LOG_DBG("Stopping application-interface thread");
+
+	if(worker_thread_) {
+		worker_thread_->join();
+	}
+
+	LOG_DBG("Application-interface thread stopped");
+
 }
 
 void ApplicationInterface::add_input_message(std::string message) {
@@ -187,50 +207,52 @@ int ApplicationInterface::start_subprocess() {
 		return applicationError;
 	} else {
 		// This is the PARENT process
+		LOG_DBG("Child: PID = %d, SID = %d!", child_pid_, child_sid_);
 
 		// Close slave terminal as we do not need it anymore
 		close(fd_terminal_slave_);
-
-		char str[40];
-		sprintf(str, "Child PID = %d!", child_pid_);
-		std::lock_guard<std::mutex> _(*mutex_);
-		consoleLinePtr message_pointer(new ConsoleLine(message_index_++, str));
-		output_messages_->push_back(message_pointer);
 	}
 
 	return applicationSuccess;
 }
 
 void ApplicationInterface::worker() {
-	bool running = true;
 	bool changed = false;
 	int count = 0;
+	int rc = 0;
+	std::unique_ptr<char> buffer;
 
-	if ((count = this->start_subprocess()) != applicationSuccess) {
-		//TODO: throw initialization error
-		char str[40];
-		sprintf(str, "Subprocess error! RC = %d!", count);
-		consoleLinePtr message_pointer(new ConsoleLine(message_index_++, str));
-								output_messages_->push_back(message_pointer);
-
+	if (this->start_subprocess() != applicationSuccess) {
 		LOG_CRT("Failed to start subprocess!");
-		running = false;
+		running_ = false;
 		return;
 	}
 
-	while (running) {
-		//TODO: Write messages to terminal
+	// Allocate buffer for reading messages
+	buffer.reset(new char[READ_LIMIT + 1]);
+	if(!buffer) {
+		LOG_CRT("Failed to allocate output message buffer!");
+		stop_flag_ = true;
+	}
+
+	LOG_TRC("APPINTF_THRD: Before while loop!");
+
+	while (!stop_flag_) {
+		// Write all messages sent by the user to terminal
 		if(input_messages_->size() > 0) {
 			std::lock_guard<std::mutex> _(*mutex_);
 
 			consoleLinePtr message_pointer = input_messages_->front();
 			ConsoleLine *message = message_pointer.get();
 
+			LOG_TRC("Writing message: '%s'", message->get_line());
+
+			// Write message to terminal connecting child application
 			count = write(fd_terminal_master_, (void *)message->get_line(), message->get_size());
 			if(count < 0) {
-				// TODO: Error: write failed
-			} else if(count != (message->get_size() * sizeof(char))) {
-				// TODO: Warning: Not all bytes written
+				LOG_ERR("Write failed for message: '%s'", message->get_line());
+			} else if(((unsigned long)count) != (message->get_size() * sizeof(char))) {
+				LOG_WRN("Not all bytes written! %d of %lu", count, message->get_size());
 			}
 
 			input_messages_->pop_front();
@@ -238,40 +260,67 @@ void ApplicationInterface::worker() {
 			changed = true;
 		}
 
-		{
-			std::lock_guard<std::mutex> _(*mutex_);
+		count 	= 0;
+		rc 		= 0;
 
-			std::shared_ptr<char> buffer((char *)calloc(READ_LIMIT + 1, sizeof(char)));
-			if(!buffer.get()) {
-				// TODO: ERROR: Failed to allocate message buffer
-				continue;
+		// Read any messages posted by the application
+		do {
+			// Create the write file descriptor set and add file descriptor to it
+			fd_set read_set;
+			FD_ZERO(&read_set);
+			FD_SET(fd_terminal_master_, &read_set);
+
+			// Data in the timeout struct will change during select so we need to define it
+			// each time before the call to select function with the desired microsecond value
+			struct timeval timeout;
+			timeout.tv_sec  = 0;
+			timeout.tv_usec = MILI_TO_MICRO(100);
+
+			// Wait for for the file descriptor to become ready for reading or for the timeout
+			// to expire
+			rc = select(fd_terminal_master_ + 1, &read_set, NULL, NULL, &timeout);
+			if(rc < 0) {
+				LOG_ERR("Select failed on terminal master file descriptor, ERRNO = %d", errno);
 			}
+			else if(rc > 0 && FD_ISSET(fd_terminal_master_, &read_set)) {
 
-			count = 0;
-			do {
-				//TODO: Read messages from terminal
-				count = read(fd_terminal_master_, (void *)buffer.get(), READ_LIMIT);
-				if(count < 0) {
-					// TODO: Error: failed to read anything from the master terminal
-					break;
-				}
-
-				consoleLinePtr message_pointer(new ConsoleLine(message_index_++, buffer.get()));
-				output_messages_->push_back(message_pointer);
-
+				// Clear message buffer
 				memset((void *)buffer.get(), 0, READ_LIMIT + 1);
 
+				// Read message from the child application
+				count = read(fd_terminal_master_, (void *)buffer.get(), READ_LIMIT);
+				if(count < 0) {
+					LOG_ERR("Failed to read anything from the master terminal after select!");
+					break;
+				}
+				(buffer.get())[count + 1] = 0;
+
+				// Lock the read message mutex
+				std::lock_guard<std::mutex> _(*mutex_);
+
+				// Add message to output message queue
+				LOG_DBG("New message read: %s", buffer.get());
+				output_messages_->emplace_back(new ConsoleLine(message_index_++, buffer.get()));
+
 				changed = true;
+			}
+		} while(rc > 0);
 
-			} while (count > 0);
-
-			buffer.reset();
-		}
+		// The timeout expired - no (more) messages
 
 		if(!changed) {
-			// Sleep for a while - give the other threads a chance
-			//std::this_thread::sleep(1);
-			sleep(1);
+			// Nothing was read or written
+			usleep(100);
 		}
+	}
+
+	LOG_TRC("APPINTF_THRD: After while loop!");
+
+	// Free message buffer
+	buffer.reset();
+
+	if(child_pid_ > 1) {
+		LOG_DBG("Killing child process!");
+		kill(child_pid_, SIGTERM);
 	}
 }

@@ -20,7 +20,7 @@ void ApplicationData::initialize(std::string run_path, std::string application, 
 
 ApplicationData::~ApplicationData() {
 	if(argument_list_) {
-		delete argument_list_;
+		delete [] argument_list_;
 	}
 	delete run_path_;
 	delete application_;
@@ -59,7 +59,7 @@ const char **ApplicationData::get_argument_list() {
 	// or if it was not created before
 	if(arguments_changed_ || !argument_list_) {
 		// First free argument list
-		delete argument_list_;
+		delete [] argument_list_;
 
 		// Get size of the arguments vector
 		int size = arguments_->size();
