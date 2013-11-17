@@ -27,8 +27,8 @@ void ApplicationInterface::initialize(
 	stop_flag_			= false;
 
 	message_index_ 		= 0;
-	input_messages_ 	= new std::deque<consoleLinePtr>();
-	output_messages_ 	= new std::deque<consoleLinePtr>();
+	input_messages_ 	= new std::deque<ConsoleLinePtr>();
+	output_messages_ 	= new std::deque<ConsoleLinePtr>();
 
 	mutex_ = new std::mutex();
 
@@ -69,21 +69,21 @@ void ApplicationInterface::stop() {
 
 void ApplicationInterface::add_input_message(std::string message) {
 	std::lock_guard<std::mutex> _(*mutex_);
-	consoleLinePtr ptr(new ConsoleLine(input_messages_->size() + 1, message.c_str()));
+	ConsoleLinePtr ptr(new ConsoleLine(input_messages_->size() + 1, message.c_str()));
 	input_messages_->push_back(ptr);
 }
 
 void ApplicationInterface::add_input_message(char *message) {
 	std::lock_guard<std::mutex> _(*mutex_);
-	consoleLinePtr ptr(new ConsoleLine(input_messages_->size() + 1, message));
+	ConsoleLinePtr ptr(new ConsoleLine(input_messages_->size() + 1, message));
 	input_messages_->push_back(ptr);
 }
 
-std::deque<consoleLinePtr> *ApplicationInterface::get_output_message(int last_index) {
+ConsoleLinePtrDequePtr ApplicationInterface::get_output_message(int last_index) {
 	std::lock_guard<std::mutex> _(*mutex_);
-	std::deque<consoleLinePtr> * queue = new std::deque<consoleLinePtr>();
+	ConsoleLinePtrDequePtr queue(new ConsoleLinePtrDeque());
 
-	for(consoleLinePtr line_ptr : *output_messages_) {
+	for(ConsoleLinePtr line_ptr : *output_messages_) {
 		queue->push_back(line_ptr);
 	}
 
@@ -242,7 +242,7 @@ void ApplicationInterface::worker() {
 		if(input_messages_->size() > 0) {
 			std::lock_guard<std::mutex> _(*mutex_);
 
-			consoleLinePtr message_pointer = input_messages_->front();
+			ConsoleLinePtr message_pointer = input_messages_->front();
 			ConsoleLine *message = message_pointer.get();
 
 			LOG_TRC("Writing message: '%s'", message->get_line());

@@ -1,0 +1,41 @@
+/*==GENERAL==*/
+html{overflow-y:scroll;} /* Forces a scrollbar when the viewport is larger than the websites content - CSS3 */
+body{margin:0; padding:0; font-size:13px; font-family:Georgia, "Times New Roman", Times, serif; color:#8A837F; background-color:#EEF2E6;}
+.clear:after{content:"."; display:block; height:0; clear:both; visibility:hidden; line-height:0;}
+.clear{display:block; clear:both;}
+html[xmlns] .clear{display:block;}
+* html .clear{height:1%;}
+a{color:#4C8BBC; outline:none; text-decoration:none;}
+a:hover{text-decoration:underline;}
+.fl_left{float:left;}
+.fl_right{float:right;}
+img{margin:0; padding:0; border:none; line-height:normal; vertical-align:middle;}
+/*==WRAPING==*/
+div.wrapper{display:block; width:100%; margin:0; padding:0; text-align:left;}
+.row1{border-bottom:1px solid #CCC4A3;}
+.row2{background-color:#FFFFFF;}
+.row3{border-top:1px solid #CCC4A3;}
+#header, #container, #copyright{display:block; width:960px; margin:0 auto;}
+nav ul{margin:0; padding:0; list-style:none;}
+/*==HEADER==*/
+#header{padding:0;}
+#header hgroup{float:left; margin:5px 0;}
+#header nav{display:block; float:right; margin:40px 0 0; padding:0; color:#C0BAB6; font-size:15px;}
+#header nav ul{padding:0; list-style:none; margin:0;}
+#header nav li{display: inline; margin: 0 0.5em 0 0; }
+#header nav li.last{margin-right:0;}
+#header nav li a{padding:10px 15px; border:solid; border-color:#CCC4A3; border-width:1px 1px 0 1px; background-color:#FFFFFF;}
+#header nav li a:hover{color:#8A837F;}
+#header nav li a.selected{border-bottom:1px solid #FFF;}
+/*==CONTENT==*/
+#container{padding:20px 0;}
+#container section{display:block; width:100%; margin:0; padding:0;}
+#container #content{display:block; width:100%; line-height:1.8em;}
+#container #content #console #output { width:960px; height:700px; border:1px solid #4C8BBC; font-family: "Courier New", monospace; overflow: scroll; padding:0; background-color:#F0F0F0; }
+#container #content #console #output div.line { font-size:14px; line-height:20px; height:20px; padding:0; marging:0; text-indent:3px; }
+#container #content #console #output div.line:nth-child(odd) { background-color:#FFF; }
+#container #content #console #input { width:960px; margin: 5px 0 0; }
+#container #content #console #input #command { width:880px; height:20px; border:1px solid #8A837F; margin: 0 5px 0 0; padding:3px; outline:none; }
+#container #content #console #input #submit { width:60px; height:30px; margin: 0; padding:3px; }
+#copyright{padding:20px 0;}
+#copyright p{margin:0; padding: 0;}

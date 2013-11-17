@@ -4,13 +4,13 @@
 #include "shared.h"
 #include "log_sink.h"
 
-#define	LL_NO 			0	/** No logging level */
-#define	LL_CRITICAL		1	/** Critical log level */
-#define LL_ERROR		2	/** Error log level */
-#define LL_WARNING		3	/** Warning log level */
-#define LL_DEBUG		4	/** Debug log level */
-#define LL_TRACE		5	/** Trace log level */
-#define LL_ALL			6	/** All logging level */
+#define	LL_NO 			0	/* No logging level */
+#define	LL_CRITICAL		1	/* Critical log level */
+#define LL_ERROR		2	/* Error log level */
+#define LL_WARNING		3	/* Warning log level */
+#define LL_DEBUG		4	/* Debug log level */
+#define LL_TRACE		5	/* Trace log level */
+#define LL_ALL			6	/* All logging level */
 
 #define LOG_EXPAND(level, args...) 	LOG_CALL(level, __FILE__, __LINE__, args)
 #define LOG_CALL(level, file, line, args...) \

@@ -4,6 +4,7 @@
 #include "shared.h"
 
 #include "application_interface.h"
+#include "web_template.h"
 
 class WebInterface {
 public:
@@ -19,10 +20,16 @@ public:
 private:
 	void worker();
 
+	StringPtr format_content(ConsoleLinePtrDequePtr console_messages);
+	StringPtr format_menu();
+	StringPtr format_head();
+
 	std::shared_ptr<ApplicationInterface> application_interface_;
 
 	std::thread *worker_thread_;
 	std::mutex *mutex_;
+
+	WebTemplate *web_template_;
 
 	volatile bool running_;
 	volatile bool stop_flag_;

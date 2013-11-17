@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+	<title>{{TITLE}}</title>
+	<meta charset="utf-8">
+	<link rel="stylesheet" href="layout.css" type="text/css">
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+	<!--[if lt IE 9]><script src="html5shiv.js"></script><![endif]-->
+	{{HEAD}}
+</head>
+<body>
+<div class="wrapper row1">
+  <header id="header" class="clear">
+    <hgroup>
+      <h1><a href="#"><img src="webcli.png"></a></h1>
+    </hgroup>
+    <nav>
+	<!--
+	<ul>
+		<li><a href="#">Text Link</a></li>
+		<li><a class="selected" href="#">Text Link</a></li>
+		<li><a href="#">Text Link</a></li>
+		<li><a href="#">Text Link</a></li>
+	<li class="last"><a href="#">Text Link</a></li>
+        </ul>
+	-->
+	{{MENU}}
+    </nav>
+  </header>
+</div>
+<div class="wrapper row2">
+  <div id="container" class="clear">
+      <section id="content" class="clear">
+        <div id="console">
+		{{CONTENT}}
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+<div class="wrapper row3">
+  <footer id="copyright" class="clear">
+    <p class="fl_left"><a href="http://www.github.com/jkrasna/webcli" title="Webcli">Webcli</a> - web interface to console applications</p>
+    <p class="fl_right">By: <a href="http://www.github.com/jkrasna" title="Jure Krasna">Jure Krasna</a></p>
+  </footer>
+</div>
+</body>
+</html>

@@ -4,17 +4,22 @@ CCFLAGS=-Wall -g -std=c++11
 SOURCES=$(wildcard *.cpp)
 OBJECTS=$(SOURCES:.cpp=.o)
 
-LIBS=-lfcgi++ -lfcgi -lboost_thread -lboost_system -lutil
+LIBS=-lfcgi++ -lfcgi -lboost_regex -lutil
 
 MAIN=webcli
 
 all: $(MAIN)
 
-application_data.cpp: 			shared.h application_data.h 
-application_interface.cpp: 		shared.h application_interface.h application_data.h
-web_interface.cpp: 				shared.h web_interface.h application_interface.h
-main.cpp: 						shared.h main.h web_interface.h application_interface.h
-
+log_sink.cpp:					shared.h log_sink.h
+log_sink_file.cpp:				shared.h log_sink_file.h log_sink.h
+logging.cpp:					shared.h logging.h log_sink.h
+console_line.cpp:				shared.h logging.h console_line.h
+application_data.cpp: 			shared.h logging.h application_data.h 
+application_interface.cpp: 		shared.h logging.h application_interface.h application_data.h console_line.h
+web_template.cpp:				shared.h logging.h web_template.h
+web_interface.cpp: 				shared.h logging.h web_interface.h application_interface.h web_template.h
+control_flow.cpp:				shared.h logging.h control_flow.h web_interface.h application_interface.h application_data.h
+main.cpp: 						shared.h logging.h main.h control_flow.h log_sink.h log_sink_file.h
 
 %.o: %.cpp
 	$(CC) -c $(CCFLAGS) $< -o $@

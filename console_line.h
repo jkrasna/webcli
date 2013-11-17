@@ -13,7 +13,6 @@ public:
 	char *get_line();
 	unsigned long get_size();
 
-
 private:
 	void initialize(unsigned long index, const char *line);
 
@@ -22,6 +21,8 @@ private:
 	unsigned long size_;
 };
 
-typedef std::shared_ptr<ConsoleLine> consoleLinePtr;
+typedef std::shared_ptr<ConsoleLine> ConsoleLinePtr;
+typedef std::deque<ConsoleLinePtr> ConsoleLinePtrDeque;
+typedef std::shared_ptr<ConsoleLinePtrDeque> ConsoleLinePtrDequePtr;
 
 #endif /* WEBCLI_CONSOLE_LINE_H_ */

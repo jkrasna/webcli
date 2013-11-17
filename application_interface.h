@@ -13,12 +13,12 @@ enum APPLICATION_STATUS {
 
 class ApplicationInterface {
 public:
-	ApplicationInterface(std::shared_ptr<ApplicationData> application_data);
+	ApplicationInterface(ApplicationDataPtr application_data);
 	virtual ~ApplicationInterface();
 
 	void add_input_message(std::string);
 	void add_input_message(char *);
-	std::deque<consoleLinePtr> *get_output_message(int last_index);
+	ConsoleLinePtrDequePtr get_output_message(int last_index);
 
 	inline bool is_running() {
 		return running_;
@@ -27,7 +27,7 @@ public:
 	void stop();
 
 private:
-	void initialize(std::shared_ptr<ApplicationData> application_data);
+	void initialize(ApplicationDataPtr application_data);
 	void worker();
 
 	int start_subprocess();
@@ -39,8 +39,8 @@ private:
 	std::mutex *mutex_;
 
 	int message_index_;
-	std::deque<consoleLinePtr> *input_messages_;
-	std::deque<consoleLinePtr> *output_messages_;
+	std::deque<ConsoleLinePtr> *input_messages_;
+	std::deque<ConsoleLinePtr> *output_messages_;
 
 	std::shared_ptr<ApplicationData> application_data_;
 

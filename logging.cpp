@@ -17,14 +17,14 @@ Logging::~Logging() {
 
 const char *Logging::get_level_string(int level) {
 	switch(level) {
-		case 0: return "[NONE]:    ";
-		case 1: return "[CRITICAL]:";
-		case 2: return "[ERROR]:   ";
-		case 3: return "[WARNING]: ";
-		case 4: return "[DEBUG]:   ";
-		case 5: return "[TRACE]:   ";
-		case 6: return "[ALL]:     ";
-		default: return "[unknown]: ";
+		case LL_NO: 		return "[NONE]:    ";
+		case LL_CRITICAL: 	return "[CRITICAL]:";
+		case LL_ERROR: 		return "[ERROR]:   ";
+		case LL_WARNING: 	return "[WARNING]: ";
+		case LL_DEBUG: 		return "[DEBUG]:   ";
+		case LL_TRACE: 		return "[TRACE]:   ";
+		case LL_ALL: 		return "[ALL]:     ";
+		default: 			return "[unknown]: ";
 	}
 }
 

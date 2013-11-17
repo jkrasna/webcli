@@ -8,13 +8,18 @@
 #include "application_interface.h"
 #include "logging.h"
 
-using namespace std;
+#define KW_TITLE 	"TITLE"
+#define KW_HEAD		"HEAD"
+#define KW_MENU		"MENU"
+#define KW_CONTENT  "CONTENT"
 
 WebInterface::WebInterface(std::shared_ptr<ApplicationInterface> application_interface) {
 	running_ 	= true;
 	stop_flag_ 	= false;
 
 	application_interface_ = application_interface;
+
+	web_template_ = new WebTemplate("template/template.html");
 
 	mutex_ = new std::mutex();
 	worker_thread_ = new std::thread(&WebInterface::worker, this);
@@ -45,72 +50,69 @@ void WebInterface::stop() {
 
 void WebInterface::worker() {
 	// Backup the stdio streambufs
-	streambuf * cin_streambuf  = cin.rdbuf();
-	streambuf * cout_streambuf = cout.rdbuf();
-	streambuf * cerr_streambuf = cerr.rdbuf();
+	std::streambuf * cin_streambuf  = std::cin.rdbuf();
+	std::streambuf * cout_streambuf = std::cout.rdbuf();
+	std::streambuf * cerr_streambuf = std::cerr.rdbuf();
+
+	const std::string kw_title(KW_TITLE);
+	const std::string kw_head(KW_HEAD);
+	const std::string kw_menu(KW_MENU);
+	const std::string kw_content(KW_CONTENT);
+
 
 	FCGX_Request request;
 
-	LOG_TRC("Before FCGI init!");
-
+	// Initialize FastCGI library and request
 	FCGX_Init();
 	FCGX_InitRequest(&request, 0, FCGI_FAIL_ACCEPT_ON_INTR);
 
-	std::deque<consoleLinePtr> * console_messages = NULL;
+	LOG_DBG("FastCGI initialization success!");
 
-	LOG_TRC("After FCGI init!");
+	// TODO: Read this from the configuration database / file
+	StringPtr page_title(new std::string("WebCLI"));
 
 	while (!stop_flag_) {
 		if(FCGX_Accept_r(&request) >= 0) {
+
 			fcgi_streambuf cin_fcgi_streambuf(request.in);
 			fcgi_streambuf cout_fcgi_streambuf(request.out);
 			fcgi_streambuf cerr_fcgi_streambuf(request.err);
 
-			LOG_TRC("Processing request!");
+			std::cin.rdbuf(&cin_fcgi_streambuf);
+			std::cout.rdbuf(&cout_fcgi_streambuf);
+			std::cerr.rdbuf(&cerr_fcgi_streambuf);
 
-			cin.rdbuf(&cin_fcgi_streambuf);
-			cout.rdbuf(&cout_fcgi_streambuf);
-			cerr.rdbuf(&cerr_fcgi_streambuf);
-
-			cout 	<< "Content-type: text/html\r\n"
-					<< "\r\n"
-					<< "<html>\n"
-					<< "\t<head>\n"
-					<< "\t\t<title>Hello, World!</title>\n"
-					<< "\t</head>\n"
-					<< "\t<body>\n"
-					<< "\t\t<h1>Hello, World!</h1>\n";
-
-			const char * uri = FCGX_GetParam("REQUEST_URI", request.envp);
-			cout << "URI: " << uri << endl;
-
-			LOG_TRC("Before requesting messages from app interface!");
-			console_messages = application_interface_->get_output_message(0);
-			LOG_TRC("After requesting messages from app interface!");
-			if (console_messages->size() == 0) {
-				cout << "\t\t<p>Empty messages!</p>\n";
-			}
-			else {
-				cout << "\t\t<table style='border:1px solid #CCC;'>\n";
-				//for (int i = 0; i < console_messages->size(); i++) {
-				for (consoleLinePtr &console_line : *console_messages) {
-					cout << "\t\t<tr><td>" << console_line->get_index() << "</td><td>" << console_line->get_line() << "</td></tr>\n";
-				}
-				cout << "\t\t</table>\n";
+			// getting the uri from the request
+			std::string uri;
+			const char *uri_param = FCGX_GetParam("REQUEST_URI", request.envp);
+			if(!uri_param) {
+				LOG_ERR("Failed to retrieve the request URI environment value!");
+				uri = "error";
+			} else {
+				uri = uri_param;
 			}
 
-			console_messages->clear();
-			delete console_messages;
+			LOG_DBG("Request received: %s", uri.c_str());
 
-			cout << "<form action='" << uri << "' method='post'>"
-				 << "<input type='text' name='command'>"
-				 << "<input type='submit' value='Send'>"
-				 << "</form>";
+			// Prepare template content
+			std::map<std::string, StringPtr> template_data;
+			template_data[kw_title] = page_title;
 
-			cout 	<< "\t</body>\n"
-					<< "</html>\n";
+			if(uri.compare("/") == 0 || uri.empty()) {
+				LOG_TRC("START PAGE");
 
-			// Note: the fcgi_streambuf destructor will auto flush
+				StringPtr content = format_content(
+						application_interface_->get_output_message(0));
+				template_data[kw_content] = content;
+				template_data[kw_menu] = format_menu();
+				template_data[kw_head] = format_head();
+
+				StringPtr page = web_template_->get_with_content(template_data);
+				std::cout << *(page.get());
+
+			} else if (uri.compare("error") == 0) {
+				LOG_TRC("ERROR PAGE");
+			}
 		}
 		else {
 			LOG_TRC("FCGX_Aceept_r returned less than 0!");
@@ -119,15 +121,63 @@ void WebInterface::worker() {
 
 	LOG_TRC("Out of accept request loop!");
 
-	// Free request
+	// Free request strucure
 	FCGX_Finish_r(&request);
 
 	// Flag the thread as not running anymore.
 	running_ = false;
 
 	// restore stdio streambufs
-	cin.rdbuf(cin_streambuf);
-	cout.rdbuf(cout_streambuf);
-	cerr.rdbuf(cerr_streambuf);
+	std::cin.rdbuf(cin_streambuf);
+	std::cout.rdbuf(cout_streambuf);
+	std::cerr.rdbuf(cerr_streambuf);
+}
+
+StringPtr WebInterface::format_content(ConsoleLinePtrDequePtr console_messages) {
+	std::stringstream data;
+
+	data << "\t\t\t<div id=\"output\">\n";
+
+	if (console_messages->size() > 0) {
+		for (ConsoleLinePtr &console_line : *console_messages) {
+			data << "\t\t\t\t<div id=\"line" << console_line->get_index() << "\" class=\"line\">";
+			data << console_line->get_line();
+			data << "</div>" << std::endl;
+		}
+	}
+	console_messages.reset();
+
+	data << "\t\t\t</div>" << std::endl;
+	data << "\t\t\t<div id=\"input\">" << std::endl;
+	data << "\t\t\t\t<form action=\"\\\" autocomplete=\"off\">" << std::endl;
+	data << "\t\t\t\t\t<input id=\"command\" type=\"text\" name=\"command\">" << std::endl;
+	data << "\t\t\t\t\t<input id=\"submit\" type=\"submit\" value=\"Submit\">" << std::endl;
+	data << "\t\t\t\t</form>" << std::endl;
+	data << "\t\t\t</div>" << std::endl;
+
+	StringPtr content(new std::string(data.str()));
+	return content;
+}
+
+StringPtr WebInterface::format_menu() {
+	std::stringstream data;
+
+	data << "\t\t<ul>" << std::endl;
+	data << "\t\t\t<li><a class=\"selected\" href=\"#\">Console</a></li>" << std::endl;
+	data << "\t\t\t<li><a href=\"config\">Configuration</a></li>" << std::endl;
+	data << "\t\t\t<li class=\"last\"><a href=\"log\">Log output</a></li>" << std::endl;
+	data << "\t\t</ul>" << std::endl;
+
+	StringPtr menu(new std::string(data.str()));
+	return menu;
+}
+
+StringPtr WebInterface::format_head() {
+	std::stringstream data;
+
+	data << "" << std::endl;
+
+	StringPtr head(new std::string(data.str()));
+	return head;
 }
 

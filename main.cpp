@@ -1,6 +1,5 @@
 #include "main.h"
 #include "control_flow.h"
-#include "log_sink.h"
 #include "log_sink_file.h"
 #include "logging.h"
 

@@ -11,7 +11,7 @@ void ApplicationData::initialize(std::string run_path, std::string application, 
 	application_ 	= new std::string(application);
 	search_ 		= search;
 
-	arguments_		= new std::vector<stringPtr>();
+	arguments_		= new std::vector<StringPtr>();
 	mutex_			= new std::mutex();
 
 	argument_list_		= NULL;
@@ -30,13 +30,13 @@ ApplicationData::~ApplicationData() {
 
 void ApplicationData::add_new_argument(char *argument) {
 	std::lock_guard<std::mutex> _(*mutex_);
-	arguments_->push_back(stringPtr(new std::string(argument)));
+	arguments_->push_back(StringPtr(new std::string(argument)));
 	arguments_changed_ = true;
 }
 
 void ApplicationData::add_new_argument(std::string argument) {
 	std::lock_guard<std::mutex> _(*mutex_);
-	arguments_->push_back(stringPtr(new std::string(argument)));
+	arguments_->push_back(StringPtr(new std::string(argument)));
 	arguments_changed_ = true;
 }
 
@@ -59,7 +59,9 @@ const char **ApplicationData::get_argument_list() {
 	// or if it was not created before
 	if(arguments_changed_ || !argument_list_) {
 		// First free argument list
-		delete [] argument_list_;
+		if (argument_list_) {
+			delete[] argument_list_;
+		}
 
 		// Get size of the arguments vector
 		int size = arguments_->size();
@@ -70,10 +72,8 @@ const char **ApplicationData::get_argument_list() {
 		// The first parameter must be the program name
 		argument_list_[0] = application_->c_str();
 
-		std::string *argument;
 		for(int i=0; i < size; i++) {
-			argument = arguments_->at(i).get();
-			argument_list_[i+1] = argument->c_str();
+			argument_list_[i+1] = arguments_->at(i)->c_str();
 		}
 
 		// The pointer list must be NULL-terminated
