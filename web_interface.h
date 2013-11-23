@@ -24,6 +24,8 @@ private:
 	StringPtr format_menu();
 	StringPtr format_head();
 
+	std::string get_mime_type(std::string filetype);
+
 	std::shared_ptr<ApplicationInterface> application_interface_;
 
 	std::thread *worker_thread_;

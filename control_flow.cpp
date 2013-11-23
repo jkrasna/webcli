@@ -7,7 +7,7 @@
 
 ControlFlow::ControlFlow() {
 	running_ = true;
-	application_data_.reset(new ApplicationData("/home/jkrasna/", "nc", true));
+	application_data_.reset(new ApplicationData("/home/jkrasna", "/home/jkrasna/workspace/constprint/cprnt", false));
 
 	application_data_->add_new_argument((char *)"-l");
 	application_data_->add_new_argument((char *)"-p");

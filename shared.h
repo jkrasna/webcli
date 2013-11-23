@@ -14,6 +14,11 @@
 #include <cstdlib>
 
 #include <boost/regex.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string/find.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+
+#define MILI_TO_MICRO(mili) 	mili*1000
 
 typedef std::shared_ptr<std::string> StringPtr;
 

@@ -7,6 +7,7 @@
 
 #include "application_interface.h"
 #include "logging.h"
+#include "utils.h"
 
 #define KW_TITLE 	"TITLE"
 #define KW_HEAD		"HEAD"
@@ -108,11 +109,50 @@ void WebInterface::worker() {
 				template_data[kw_head] = format_head();
 
 				StringPtr page = web_template_->get_with_content(template_data);
+				std::cout << "Content-type: text/html\r\n\r\n";
 				std::cout << *(page.get());
 
 			} else if (uri.compare("error") == 0) {
 				LOG_TRC("ERROR PAGE");
 			}
+			else {
+				LOG_DBG("Unknown URI: %s", uri.c_str());
+
+				std::string path = ".";
+				path += uri;
+				boost::filesystem::path filepath(path);
+
+				if(boost::filesystem::exists(filepath) &&
+						boost::filesystem::is_regular_file(filepath))
+				{
+					LOG_DBG("The file: %s is a regular file!", path.c_str());
+
+					std::string *file_data = Utils::read_file(path);
+
+					StringPtr page = web_template_->get_with_content(template_data);
+					std::cout << "Content-type: " << get_mime_type(uri) << "\r\n\r\n";
+					std::cout << *(file_data);
+
+					delete file_data;
+				}
+				else {
+					LOG_DBG("The file: %s is NOT a regular file or does not exist!", path.c_str());
+
+					template_data[kw_menu] = format_menu();
+					template_data[kw_head] = format_head();
+					StringPtr content(new std::string);
+					content->append("Unknown page requested: ");
+					content->append(uri);
+
+					template_data[kw_content] = content;
+
+					StringPtr page = web_template_->get_with_content(template_data);
+					std::cout << "Content-type: text/html\r\n\r\n";
+					std::cout << *(page.get());
+				}
+			}
+
+
 		}
 		else {
 			LOG_TRC("FCGX_Aceept_r returned less than 0!");
@@ -179,5 +219,89 @@ StringPtr WebInterface::format_head() {
 
 	StringPtr head(new std::string(data.str()));
 	return head;
+}
+
+/// Get the MIME type of the file.
+/**
+ * @returns The MIME type as a string. Returns an empty string if the
+ *          file type isn't recognised / supported.
+ */
+std::string WebInterface::get_mime_type(std::string filetype) {
+	std::size_t pos(filetype.rfind(".") + 1);
+	if (pos == std::string::npos)
+		return "";
+
+	filetype = filetype.substr(pos);
+	boost::algorithm::to_lower(filetype);
+
+	/// Ordinary text files.
+	if (filetype == "ini" || filetype == "txt" || filetype == "conf")
+		return "text/plain";
+	else if (filetype == "js")
+		return "application/javascript";
+	else if (filetype == "json")
+		return "application/json";
+	else if (filetype == "css")
+		return "text/css";
+	else
+	/// Structured text files.
+	if (filetype == "html" || filetype == "htm")
+		return "text/html";
+	else if (filetype == "xml")
+		return "text/xml";
+	else if (filetype == "csv")
+		return "text/csv";
+	else if (filetype == "rtf")
+		return "text/rtf";
+	else
+	/// Image files.
+	if (filetype == "jpg" || filetype == "jpeg")
+		return "image/jpeg";
+	else if (filetype == "gif")
+		return "image/gif";
+	else if (filetype == "bmp")
+		return "image/x-ms-bmp";
+	else if (filetype == "png")
+		return "image/png";
+	else if (filetype == "tiff")
+		return "image/tiff";
+	else
+	/// Audio files.
+	if (filetype == "ogg")
+		return "audio/ogg";
+	else if (filetype == "mp3")
+		return "audio/mpeg";
+	else
+	/// Video files.
+	if (filetype == "avi")
+		return "video/x-msvideo";
+	else
+	/// Rich media files.
+	if (filetype == "pdf")
+		return "application/pdf";
+	else if (filetype == "doc")
+		return "application/msword";
+	else if (filetype == "swf")
+		return "application/x-shockwave-flash";
+	else if (filetype == "xls")
+		return "application/vnd.ms-excel";
+	/// Compressed files.
+	else if (filetype == "zip")
+		return "application/zip";
+	else if (filetype == "tar")
+		return "application/x-tar";
+	/// Other files.
+	else if (filetype == "pl")
+		return "application/x-perl";
+	else if (filetype == "py")
+		return "application/x-python";
+	else if (filetype == "exe" || filetype == "dll" || filetype == "sys"
+			|| filetype == "chm" || filetype == "lib" || filetype == "pdb"
+			|| filetype == "obj" || filetype == "dep" || filetype == "idb"
+			|| filetype == "pyd" || filetype == "sqm" || filetype == "idb"
+			|| filetype == "asm" || filetype == "suo" || filetype == "sbr")
+		return ""; // Not allowed to download these file types.
+
+	return "text/plain";
 }
 

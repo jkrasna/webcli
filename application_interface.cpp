@@ -12,8 +12,6 @@
 
 #include "logging.h"
 
-#define MILI_TO_MICRO(mili) 	mili*1000
-
 ApplicationInterface::ApplicationInterface(
 		std::shared_ptr<ApplicationData> application_data) {
 	initialize(application_data);
@@ -204,6 +202,8 @@ int ApplicationInterface::start_subprocess() {
 		LOG_CRT("ERROR: Unable to start: '%s' - exec failed! ERRNO = %d",
 				application_data_->get_application(), errno_save);
 
+		exit(-1);
+
 		return applicationError;
 	} else {
 		// This is the PARENT process
@@ -242,8 +242,7 @@ void ApplicationInterface::worker() {
 		if(input_messages_->size() > 0) {
 			std::lock_guard<std::mutex> _(*mutex_);
 
-			ConsoleLinePtr message_pointer = input_messages_->front();
-			ConsoleLine *message = message_pointer.get();
+			ConsoleLinePtr message = input_messages_->front();
 
 			LOG_TRC("Writing message: '%s'", message->get_line());
 
@@ -256,7 +255,7 @@ void ApplicationInterface::worker() {
 			}
 
 			input_messages_->pop_front();
-			message_pointer.reset();
+			message.reset();
 			changed = true;
 		}
 
@@ -304,13 +303,16 @@ void ApplicationInterface::worker() {
 
 				changed = true;
 			}
+
+			usleep(MILI_TO_MICRO(1));
+
 		} while(rc > 0);
 
 		// The timeout expired - no (more) messages
 
 		if(!changed) {
 			// Nothing was read or written
-			usleep(100);
+			usleep(MILI_TO_MICRO(100));
 		}
 	}
 
