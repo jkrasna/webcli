@@ -32,8 +32,9 @@ nav ul{margin:0; padding:0; list-style:none;}
 #container section{display:block; width:100%; margin:0; padding:0;}
 #container #content{display:block; width:100%; line-height:1.8em;}
 #container #content #console #output { width:960px; height:700px; border:1px solid #4C8BBC; font-family: "Courier New", monospace; overflow: scroll; padding:0; background-color:#F0F0F0; }
-#container #content #console #output div.line { font-size:14px; line-height:20px; height:20px; padding:0; marging:0; text-indent:3px; }
+#container #content #console #output div.line { font-size:14px; line-height:20px; height:20px; padding:0; margin:0; text-indent:3px; }
 #container #content #console #output div.line:nth-child(odd) { background-color:#FFF; }
+#container #content #console #output div.line span.time { /*color:#CCC4A3;*/ font-weight:bold; margin-right:3px; }
 #container #content #console #input { width:960px; margin: 5px 0 0; }
 #container #content #console #input #command { width:880px; height:20px; border:1px solid #8A837F; margin: 0 5px 0 0; padding:3px; outline:none; }
 #container #content #console #input #submit { width:60px; height:30px; margin: 0; padding:3px; }

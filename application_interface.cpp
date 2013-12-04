@@ -24,13 +24,11 @@ void ApplicationInterface::initialize(
 	running_			= true;
 	stop_flag_			= false;
 
-	message_index_ 		= 0;
 	input_messages_ 	= new std::deque<ConsoleLinePtr>();
 	output_messages_ 	= new std::deque<ConsoleLinePtr>();
 
-	mutex_ = new std::mutex();
-
-	worker_thread_ = new std::thread(&ApplicationInterface::worker, this);
+	mutex_ 				= new std::mutex();
+	worker_thread_      = new std::thread(&ApplicationInterface::worker, this);
 
 	child_pid_			= 0;
 	child_sid_			= 0;
@@ -67,17 +65,15 @@ void ApplicationInterface::stop() {
 
 void ApplicationInterface::add_input_message(std::string message) {
 	std::lock_guard<std::mutex> _(*mutex_);
-	ConsoleLinePtr ptr(new ConsoleLine(input_messages_->size() + 1, message.c_str()));
-	input_messages_->push_back(ptr);
+	input_messages_->emplace_back(new ConsoleLine(message));
 }
 
 void ApplicationInterface::add_input_message(char *message) {
 	std::lock_guard<std::mutex> _(*mutex_);
-	ConsoleLinePtr ptr(new ConsoleLine(input_messages_->size() + 1, message));
-	input_messages_->push_back(ptr);
+	input_messages_->emplace_back(new ConsoleLine(message));
 }
 
-ConsoleLinePtrDequePtr ApplicationInterface::get_output_message(int last_index) {
+ConsoleLinePtrDequePtr ApplicationInterface::get_output_message() {
 	std::lock_guard<std::mutex> _(*mutex_);
 	ConsoleLinePtrDequePtr queue(new ConsoleLinePtrDeque());
 
@@ -87,6 +83,45 @@ ConsoleLinePtrDequePtr ApplicationInterface::get_output_message(int last_index) 
 
 	return queue;
 }
+
+ConsoleLinePtrDequePtr ApplicationInterface::get_output_message_before(std::string iso_time) {
+	std::lock_guard<std::mutex> _(*mutex_);
+	ConsoleLinePtrDequePtr queue(new ConsoleLinePtrDeque());
+
+	for(ConsoleLinePtr line_ptr : *output_messages_) {
+		if((*line_ptr).is_before_time(iso_time)) {
+			queue->push_back(line_ptr);
+		}
+	}
+
+	return queue;
+}
+
+ConsoleLinePtrDequePtr ApplicationInterface::get_output_message_after(std::string iso_time) {
+	std::lock_guard<std::mutex> _(*mutex_);
+	ConsoleLinePtrDequePtr queue(new ConsoleLinePtrDeque());
+
+	ConsoleLinePtrDeque::reverse_iterator rit;
+
+	/* Reverse iterate over the existing message queue as the last messages
+	 * will be at the end. When encountering the first message which isn't
+	 * after the time specified stop, as there is no point to continue. All
+	 * messages before that point are going to fail the time test anyway.
+	 * The messages are inserted into the new queue from the front in order
+	 * to keep the same message order.
+	 */
+	for(rit = (*output_messages_).rbegin(); rit!=(*output_messages_).rend(); rit++) {
+		if((*rit)->is_after_time(iso_time)) {
+			queue->push_front((*rit));
+		} else {
+			break;
+		}
+	}
+
+	return queue;
+}
+
+
 
 //! The function that starts the application as a subprocess
 
@@ -244,14 +279,17 @@ void ApplicationInterface::worker() {
 
 			ConsoleLinePtr message = input_messages_->front();
 
-			LOG_TRC("Writing message: '%s'", message->get_line());
+			LOG_TRC("Writing message: '%s'", message->get_line().c_str());
 
 			// Write message to terminal connecting child application
-			count = write(fd_terminal_master_, (void *)message->get_line(), message->get_size());
+			std::string command = message->get_line();
+			command.append("\n");
+
+			count = write(fd_terminal_master_, (void *)command.c_str(), command.size());
 			if(count < 0) {
-				LOG_ERR("Write failed for message: '%s'", message->get_line());
-			} else if(((unsigned long)count) != (message->get_size() * sizeof(char))) {
-				LOG_WRN("Not all bytes written! %d of %lu", count, message->get_size());
+				LOG_ERR("Write failed for message: '%s'", message->get_line().c_str());
+			} else if(((unsigned long)count) != (command.size() * sizeof(char))) {
+				LOG_WRN("Not all bytes written! %d of %lu", count, command.size());
 			}
 
 			input_messages_->pop_front();
@@ -262,44 +300,52 @@ void ApplicationInterface::worker() {
 		count 	= 0;
 		rc 		= 0;
 
-		// Read any messages posted by the application
+		/* Read any messages posted by the application */
 		do {
-			// Create the write file descriptor set and add file descriptor to it
+			/* Create the write file descriptor set and add file descriptor to it */
 			fd_set read_set;
 			FD_ZERO(&read_set);
 			FD_SET(fd_terminal_master_, &read_set);
 
-			// Data in the timeout struct will change during select so we need to define it
-			// each time before the call to select function with the desired microsecond value
+			/* Data in the timeout struct will change during select so we need to define it
+			 * each time before the call to select function with the desired microsecond value */
 			struct timeval timeout;
 			timeout.tv_sec  = 0;
 			timeout.tv_usec = MILI_TO_MICRO(100);
 
-			// Wait for for the file descriptor to become ready for reading or for the timeout
-			// to expire
+			/* Wait for for the file descriptor to become ready for reading or for the timeout
+			 * to expire */
 			rc = select(fd_terminal_master_ + 1, &read_set, NULL, NULL, &timeout);
 			if(rc < 0) {
 				LOG_ERR("Select failed on terminal master file descriptor, ERRNO = %d", errno);
 			}
 			else if(rc > 0 && FD_ISSET(fd_terminal_master_, &read_set)) {
 
-				// Clear message buffer
+				/* Clear message buffer */
 				memset((void *)buffer.get(), 0, READ_LIMIT + 1);
 
-				// Read message from the child application
+				/* Read message from the child application */
 				count = read(fd_terminal_master_, (void *)buffer.get(), READ_LIMIT);
 				if(count < 0) {
 					LOG_ERR("Failed to read anything from the master terminal after select!");
 					break;
 				}
-				(buffer.get())[count + 1] = 0;
 
-				// Lock the read message mutex
+				/* Delete newline and formfeed character */
+				(buffer.get())[count-1] = 0;
+				(buffer.get())[count-2] = 0;
+
+				/* Lock the read message mutex */
 				std::lock_guard<std::mutex> _(*mutex_);
 
-				// Add message to output message queue
-				LOG_DBG("New message read: %s", buffer.get());
-				output_messages_->emplace_back(new ConsoleLine(message_index_++, buffer.get()));
+				/* Add message to output message queue */
+				LOG_DBG("New message read: '%s'", buffer.get());
+				output_messages_->emplace_back(new ConsoleLine(buffer.get()));
+
+				/* Cleanup message queue */
+				while(output_messages_->size() > QUEUE_MESSAGE_COUNT_MAX) {
+					output_messages_->pop_front();
+				}
 
 				changed = true;
 			}

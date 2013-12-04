@@ -5,7 +5,7 @@
 #include "application_data.h"
 #include "console_line.h"
 
-#define QUEUE_MESSAGE_COUNT_MAX 	1024;
+#define QUEUE_MESSAGE_COUNT_MAX 	1024
 
 enum APPLICATION_STATUS {
 	applicationSuccess, applicationError,
@@ -18,7 +18,9 @@ public:
 
 	void add_input_message(std::string);
 	void add_input_message(char *);
-	ConsoleLinePtrDequePtr get_output_message(int last_index);
+	ConsoleLinePtrDequePtr get_output_message();
+	ConsoleLinePtrDequePtr get_output_message_before(std::string iso_time);
+	ConsoleLinePtrDequePtr get_output_message_after(std::string iso_time);
 
 	inline bool is_running() {
 		return running_;
@@ -38,7 +40,6 @@ private:
 	std::thread *worker_thread_;
 	std::mutex *mutex_;
 
-	int message_index_;
 	std::deque<ConsoleLinePtr> *input_messages_;
 	std::deque<ConsoleLinePtr> *output_messages_;
 

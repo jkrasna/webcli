@@ -1,26 +1,15 @@
-/*
- * utils.cpp
- *
- *  Created on: Nov 21, 2013
- *      Author: jkrasna
- */
-
 #include "utils.h"
+
 #include "logging.h"
 
-Utils::Utils() {
-	// TODO Auto-generated constructor stub
+#include <sys/time.h>
 
-}
+#define TIME_BUFFER		40
 
-Utils::~Utils() {
-	// TODO Auto-generated destructor stub
-}
-
-std::string *Utils::read_file(std::string filename) {
+StringPtr Utils::read_file(std::string filename) {
 	LOG_TRC("%s", __func__);
 
-	std::string *file_content = new std::string;
+	StringPtr file_content(new std::string);
 
 	// Open input template file
 	std::ifstream input(filename, std::ios::in | std::ios::binary);
@@ -55,4 +44,19 @@ std::string *Utils::read_file(std::string filename) {
 
 	LOG_ERR("Failed to parse file: %s", filename.c_str());
 	return NULL;
+}
+
+std::string Utils::get_iso_time() {
+	char time_string[TIME_BUFFER+1];
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+
+	std::strftime(time_string, TIME_BUFFER, "%Y-%m-%dT%H:%M:%S", std::localtime(&tv.tv_sec));
+	std::string result(time_string);
+
+	snprintf(time_string, TIME_BUFFER, ".%03ld", tv.tv_usec);
+	result.append(time_string);
+
+	return result;
 }

@@ -5,20 +5,26 @@
 
 class ConsoleLine {
 public:
-	ConsoleLine(unsigned long index, const char *line);
-	ConsoleLine(unsigned long index, const std::string line);
+	ConsoleLine(const char *line);
+	ConsoleLine(const std::string &line);
 	virtual ~ConsoleLine();
 
-	unsigned long get_index();
-	char *get_line();
-	unsigned long get_size();
+	const std::string get_time();
+	const std::string get_line();
+
+	int compare(ConsoleLine &cl);
+
+	bool is_before(ConsoleLine &cl);
+	bool is_after(ConsoleLine &cl);
+
+	bool is_before_time(std::string &time);
+	bool is_after_time(std::string &time);
 
 private:
-	void initialize(unsigned long index, const char *line);
+	void initialize(const std::string &line);
 
-	unsigned long index_;
-	std::shared_ptr<char> line_;
-	unsigned long size_;
+	std::string *line_;
+	std::string *time_;
 };
 
 typedef std::shared_ptr<ConsoleLine> ConsoleLinePtr;

@@ -32,7 +32,7 @@ WebTemplate::WebTemplate() {
 
 WebTemplate::WebTemplate(std::string filename) {
 	LOG_TRC("%s", __func__);
-	template_ = Utils::read_file(filename);
+	template_ = Utils::read_file(filename).get();
 	pattern_ = new boost::regex(DEFAULT_REGEX);
 	parse_ok_ = (template_ != NULL);
 }

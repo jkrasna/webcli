@@ -3,29 +3,21 @@
 <head>
 	<title>{{TITLE}}</title>
 	<meta charset="utf-8">
-	<link rel="stylesheet" href="template/layout.css" type="text/css">
+	<link rel="stylesheet" href="layout.css" type="text/css">
 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 	<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
 	<!--[if lt IE 9]><script src="template/html5shiv.js"></script><![endif]-->
-	{{HEAD}}
+{{HEAD}}
+	<script src="webcli.js"></script>
 </head>
 <body>
 <div class="wrapper row1">
   <header id="header" class="clear">
     <hgroup>
-      <a href="#"><img src="template/webcli.png"></a>
+      <a href="#"><img src="webcli.png"></a>
     </hgroup>
     <nav>
-	<!--
-	<ul>
-		<li><a href="#">Text Link</a></li>
-		<li><a class="selected" href="#">Text Link</a></li>
-		<li><a href="#">Text Link</a></li>
-		<li><a href="#">Text Link</a></li>
-	<li class="last"><a href="#">Text Link</a></li>
-        </ul>
-	-->
-	{{MENU}}
+{{MENU}}
     </nav>
   </header>
 </div>
@@ -33,7 +25,15 @@
   <div id="container" class="clear">
       <section id="content" class="clear">
         <div id="console">
-		{{CONTENT}}
+{{CONTENT}}
+          {{#INPUT}}
+          <div id="input">
+            <form id="input-form" action="/" method="get" autocomplete="off">
+              <input id="command" type="text" name="command">
+              <input id="submit" type="submit" value="Submit">
+            </form>
+          </div>
+          {{/INPUT}}
         </div>
       </section>
     </div>
