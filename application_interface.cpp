@@ -12,6 +12,8 @@
 
 #include "logging.h"
 
+#define READ_LIMIT		1024
+
 ApplicationInterface::ApplicationInterface(
 		std::shared_ptr<ApplicationData> application_data) {
 	initialize(application_data);
@@ -91,6 +93,8 @@ ConsoleLinePtrDequePtr ApplicationInterface::get_output_message_before(std::stri
 	for(ConsoleLinePtr line_ptr : *output_messages_) {
 		if((*line_ptr).is_before_time(iso_time)) {
 			queue->push_back(line_ptr);
+		} else {
+			break;
 		}
 	}
 
@@ -186,6 +190,14 @@ int ApplicationInterface::start_subprocess() {
 	} else if (child_pid_ == 0) {
 		// This is the CHILD process
 
+		// We need to do another fork to truly become a daemon
+		child_pid_ = fork();
+		if(child_pid_ > 0) {
+			// Close the parent process
+			// This process should now be the child of 'init'
+			exit(-1);
+		}
+
 		// Close master pseudo-terminal file descriptor
 		close(fd_terminal_master_);
 
@@ -256,6 +268,7 @@ void ApplicationInterface::worker() {
 	int count = 0;
 	int rc = 0;
 	std::unique_ptr<char> buffer;
+	std::unique_ptr<char> ending;
 
 	if (this->start_subprocess() != applicationSuccess) {
 		LOG_CRT("Failed to start subprocess!");
@@ -264,9 +277,16 @@ void ApplicationInterface::worker() {
 	}
 
 	// Allocate buffer for reading messages
-	buffer.reset(new char[READ_LIMIT + 1]);
+	buffer.reset(new char[READ_LIMIT]);
 	if(!buffer) {
 		LOG_CRT("Failed to allocate output message buffer!");
+		stop_flag_ = true;
+	}
+
+	// Allocate buffer for message processing
+	ending.reset(new char[READ_LIMIT]);
+	if(!ending) {
+		LOG_CRT("Failed to allocate ending message buffer!");
 		stop_flag_ = true;
 	}
 
@@ -322,25 +342,49 @@ void ApplicationInterface::worker() {
 			else if(rc > 0 && FD_ISSET(fd_terminal_master_, &read_set)) {
 
 				/* Clear message buffer */
-				memset((void *)buffer.get(), 0, READ_LIMIT + 1);
+				memset((void *)buffer.get(), 0, READ_LIMIT);
 
 				/* Read message from the child application */
-				count = read(fd_terminal_master_, (void *)buffer.get(), READ_LIMIT);
+				count = read(fd_terminal_master_, (void *)buffer.get(), READ_LIMIT - 1);
 				if(count < 0) {
 					LOG_ERR("Failed to read anything from the master terminal after select!");
 					break;
 				}
 
+				char *lines = buffer.get();
+				char *token = lines;
+				char *end   = ending.get();
+
+				for(int i=0; i < READ_LIMIT; i++) {
+					if(lines[i] == 0) {
+						break;
+					}
+					if(lines[i] == '\n') {
+						lines[i] = 0;
+						output_messages_->emplace_back(new ConsoleLine(token));
+						token = lines + i + 1;
+					}
+				}
+
+
+
+				/*
+				token = strtok (lines, "\n\r");
+				while (token != NULL)
+				{
+					// Add message to output message queue
+					LOG_TRC("New message read: '%s'", buffer.get());
+					output_messages_->emplace_back(new ConsoleLine(token));
+					token = strtok (NULL, "\n\r");
+				}
+				*/
+
 				/* Delete newline and formfeed character */
-				(buffer.get())[count-1] = 0;
-				(buffer.get())[count-2] = 0;
+				//(buffer.get())[count-1] = 0;
+				//(buffer.get())[count-2] = 0;
 
 				/* Lock the read message mutex */
 				std::lock_guard<std::mutex> _(*mutex_);
-
-				/* Add message to output message queue */
-				LOG_DBG("New message read: '%s'", buffer.get());
-				output_messages_->emplace_back(new ConsoleLine(buffer.get()));
 
 				/* Cleanup message queue */
 				while(output_messages_->size() > QUEUE_MESSAGE_COUNT_MAX) {

@@ -431,7 +431,7 @@ bool WebInterface::add_command(std::string command) {
 		}
 	}
 
-	LOG_DBG("Command decoded: %s", decoded.str().c_str());
+	LOG_TRC("Command decoded: %s", decoded.str().c_str());
 
 	application_interface_->add_input_message(decoded.str());
 	return true;
@@ -443,8 +443,13 @@ StringStreamPtr WebInterface::format_line(ConsoleLinePtrDequePtr console_message
 	(*content) << "\t\t\t" << "<div id=\"output\">" << std::endl;
 	if (console_messages->size() > 0) {
 		for (ConsoleLinePtr &console_line : *console_messages) {
+
+			std::string timestring = console_line->get_time();
+			timestring = timestring.substr(0, 19);
+			std::replace(timestring.begin(), timestring.end(), 'T', ' ');
+
 			(*content) << "\t\t\t\t" << "<div class=\"line\">";
-			(*content) << "<span class=\"time\">" << console_line->get_time() << "</span>";
+			(*content) << "<span class=\"time\">" << timestring << "</span>";
 			(*content) << console_line->get_line();
 			(*content) << "</div>" << std::endl;
 		}

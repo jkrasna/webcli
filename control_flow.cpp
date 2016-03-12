@@ -7,11 +7,12 @@
 
 ControlFlow::ControlFlow() {
 	running_ = true;
-	application_data_.reset(new ApplicationData("/home/jkrasna", "/home/jkrasna/workspace/constprint/cprnt", false));
+	//application_data_.reset(new ApplicationData("/home/jkrasna", "/home/jkrasna/workspace/constprint/cprnt", false));
+	application_data_.reset(new ApplicationData("/home/jkrasna", "sh", true));
 
-	application_data_->add_new_argument((char *)"-l");
-	application_data_->add_new_argument((char *)"-p");
-	application_data_->add_new_argument((char *)"5000");
+	//application_data_->add_new_argument((char *)"-l");
+	//application_data_->add_new_argument((char *)"-p");
+	//application_data_->add_new_argument((char *)"5000");
 
 	application_interface_.reset(new ApplicationInterface(application_data_));
 	web_interface_.reset(new WebInterface(application_interface_));

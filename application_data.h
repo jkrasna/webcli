@@ -3,8 +3,6 @@
 
 #include "shared.h"
 
-#define READ_LIMIT		255
-
 class ApplicationData {
 public:
 	ApplicationData(std::string run_path, std::string application, bool search=false);
